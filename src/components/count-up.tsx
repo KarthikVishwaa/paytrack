@@ -42,8 +42,19 @@ function useCountUp(
       else node.textContent = format(value);
     };
 
+    // If the tab is hidden mid-count, jump to the final figure instead of
+    // leaving a frame queued for whenever the tab comes back.
+    const settle = () => {
+      cancelAnimationFrame(raf);
+      node.textContent = format(value);
+    };
+    window.addEventListener("app:suspend", settle);
+
     raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
+    return () => {
+      cancelAnimationFrame(raf);
+      window.removeEventListener("app:suspend", settle);
+    };
   }, [el, value, format, duration]);
 }
 

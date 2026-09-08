@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import dynamic from "next/dynamic";
 import {
   CalendarClock,
   CalendarDays,
@@ -10,18 +11,6 @@ import {
   TrendingUp,
   Wallet,
 } from "lucide-react";
-import {
-  Bar,
-  BarChart,
-  CartesianGrid,
-  Cell,
-  Pie,
-  PieChart,
-  ResponsiveContainer,
-  Tooltip,
-  XAxis,
-  YAxis,
-} from "recharts";
 
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -31,6 +20,17 @@ import { BudgetBar, CardsSkeleton, EmptyState, ErrorState, StatCard } from "@/co
 import { useSummary } from "@/lib/client";
 import { formatDate, formatMoney } from "@/lib/money";
 import { CATEGORY_COLORS, CATEGORY_LABELS, type ExpenseCategory } from "@/lib/types";
+
+// Recharts is the heaviest dependency on this page, so it is fetched only once
+// the dashboard is on screen rather than shipped with the first load.
+const MonthBars = dynamic(() => import("./charts").then((m) => m.MonthBars), {
+  ssr: false,
+  loading: () => <Skeleton className="h-52 w-full sm:h-64" />,
+});
+const CategoryDonut = dynamic(() => import("./charts").then((m) => m.CategoryDonut), {
+  ssr: false,
+  loading: () => <Skeleton className="size-32 shrink-0 rounded-full" />,
+});
 
 export default function DashboardClient({ isAdmin }: { isAdmin: boolean }) {
   const { data, error, isLoading, mutate } = useSummary();
@@ -184,38 +184,7 @@ export default function DashboardClient({ isAdmin }: { isAdmin: boolean }) {
             {monthData.length === 0 ? (
               <EmptyState title="Nothing logged yet" hint="Add spending to see the trend." />
             ) : (
-              <div className="h-52 w-full sm:h-64">
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={monthData} margin={{ top: 4, right: 4, left: -18, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
-                    <XAxis
-                      dataKey="month"
-                      tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
-                      tickLine={false}
-                      axisLine={false}
-                    />
-                    <YAxis
-                      tick={{ fontSize: 11, fill: "var(--muted-foreground)" }}
-                      tickLine={false}
-                      axisLine={false}
-                      width={44}
-                      tickFormatter={(v: number) => (v >= 1000 ? v / 1000 + "k" : String(v))}
-                    />
-                    <Tooltip
-                      cursor={{ fill: "var(--accent)", opacity: 0.4 }}
-                      contentStyle={{
-                        background: "var(--popover)",
-                        border: "1px solid var(--border)",
-                        borderRadius: 12,
-                        fontSize: 12,
-                        color: "var(--popover-foreground)",
-                      }}
-                      formatter={(v: number) => formatMoney(v, currency)}
-                    />
-                    <Bar dataKey="Spent" fill="var(--chart-1)" radius={[5, 5, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              </div>
+              <MonthBars data={monthData} currency={currency} />
             )}
           </CardContent>
         </Card>
@@ -229,35 +198,7 @@ export default function DashboardClient({ isAdmin }: { isAdmin: boolean }) {
               <EmptyState title="No spending yet" icon={Wallet} />
             ) : (
               <div className="flex items-center gap-3">
-                <div className="h-32 w-32 shrink-0">
-                  <ResponsiveContainer width="100%" height="100%">
-                    <PieChart>
-                      <Pie
-                        data={pieData}
-                        dataKey="value"
-                        nameKey="name"
-                        innerRadius={34}
-                        outerRadius={60}
-                        paddingAngle={2}
-                        stroke="none"
-                      >
-                        {pieData.map((c) => (
-                          <Cell key={c.name} fill={c.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        contentStyle={{
-                          background: "var(--popover)",
-                          border: "1px solid var(--border)",
-                          borderRadius: 12,
-                          fontSize: 12,
-                          color: "var(--popover-foreground)",
-                        }}
-                        formatter={(v: number) => formatMoney(v, currency)}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
+                <CategoryDonut data={pieData} currency={currency} />
                 <ul className="min-w-0 flex-1 space-y-1.5">
                   {pieData.slice(0, 6).map((c) => (
                     <li key={c.name} className="flex items-center gap-2 text-sm">

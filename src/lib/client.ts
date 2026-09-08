@@ -7,12 +7,35 @@ import type { BackupSummary } from "./backup";
 
 export class ApiError extends Error {}
 
+/**
+ * Every request in the air right now. When the tab is closed or frozen we abort
+ * the lot, so nothing is left holding a connection open in the background.
+ */
+const inFlight = new Set<AbortController>();
+
+/** Drops every pending request. Called when the tab goes away. */
+export function abortInFlight(): void {
+  for (const controller of inFlight) controller.abort();
+  inFlight.clear();
+}
+
 /** One fetch helper for the whole app; turns an error response into a readable message. */
 export async function api<T>(url: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(url, {
-    ...init,
-    headers: init?.body ? { "content-type": "application/json", ...init?.headers } : init?.headers,
-  });
+  const controller = new AbortController();
+  inFlight.add(controller);
+
+  let res: Response;
+  try {
+    res = await fetch(url, {
+      ...init,
+      signal: controller.signal,
+      headers: init?.body
+        ? { "content-type": "application/json", ...init?.headers }
+        : init?.headers,
+    });
+  } finally {
+    inFlight.delete(controller);
+  }
 
   const text = await res.text();
   let body: unknown = null;
@@ -45,6 +68,10 @@ export const swrConfig: SWRConfiguration = {
   keepPreviousData: true,
   dedupingInterval: 4000,
   focusThrottleInterval: 10000,
+  // No polling anywhere, and nothing revalidates while the tab is in the
+  // background — a hidden tab should cost no network and no battery.
+  refreshInterval: 0,
+  isVisible: () => typeof document === "undefined" || document.visibilityState === "visible",
 };
 
 export function useSummary() {
