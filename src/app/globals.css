@@ -247,6 +247,104 @@
   animation: page-swap 340ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
+/* ---- Animated tab bar (mobile bottom nav) ---------------------------
+   A row of icon buttons; the active one lifts onto a coloured disc while a
+   notch of the bar's own colour rises behind it and slides between tabs. */
+@keyframes strok {
+  100% {
+    stroke-dashoffset: 400;
+  }
+}
+
+.svg-container {
+  position: absolute;
+  width: 0;
+  height: 0;
+}
+
+.menu {
+  --timeOut: 0.45s;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-around;
+  width: 100%;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.menu__item {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 4rem;
+  height: 3.25rem;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  transition: transform var(--timeOut) cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+/* Coloured disc that rises behind the active icon. */
+.menu__item::before {
+  content: "";
+  position: absolute;
+  top: 0.15rem;
+  width: 2.6rem;
+  height: 2.6rem;
+  border-radius: 999px;
+  background: var(--bgColorItem);
+  opacity: 0;
+  transform: scale(0.4);
+  box-shadow: 0 8px 18px -6px var(--bgColorItem);
+  transition:
+    opacity var(--timeOut),
+    transform var(--timeOut) cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.menu__item.active {
+  transform: translate3d(0, -0.85rem, 0);
+}
+.menu__item.active::before {
+  opacity: 1;
+  transform: scale(1);
+}
+
+.menu__item .icon {
+  position: relative;
+  width: 1.4rem;
+  height: 1.4rem;
+  fill: none;
+  stroke: var(--muted-foreground);
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: stroke var(--timeOut);
+}
+.menu__item.active .icon {
+  stroke: #fff;
+  stroke-dasharray: 400;
+  animation: strok 1.4s ease forwards;
+}
+
+/* The notch that dips into the top edge of the bar, following the active tab. */
+.menu__border {
+  position: absolute;
+  left: 0;
+  bottom: 100%;
+  width: 4rem;
+  height: 1.1rem;
+  background: var(--menu-bg, var(--popover));
+  clip-path: url(#menu-clip-path);
+  transition: transform var(--timeOut) cubic-bezier(0.22, 1, 0.36, 1);
+  pointer-events: none;
+}
+
 .animate-rise {
   animation: rise 420ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }

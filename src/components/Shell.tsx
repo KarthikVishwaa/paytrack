@@ -2,10 +2,20 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, Moon, Settings2, SlidersHorizontal, Sun, Wallet } from "lucide-react";
+import {
+  LayoutDashboard,
+  Moon,
+  Settings2,
+  SlidersHorizontal,
+  Sun,
+  Wallet,
+} from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/theme";
+import RoutingTabBar, { type TabLink } from "@/components/routing-tab-bar";
+import NavProgress from "@/components/nav-progress";
+import WelcomeSplash from "@/components/welcome-splash";
 import { cn } from "@/lib/utils";
 import { ROLE_LABELS, type SessionUser } from "@/lib/types";
 
@@ -15,6 +25,14 @@ const LINKS = [
 ];
 
 const SETTINGS_LINK = { href: "/settings", label: "Settings", icon: SlidersHorizontal };
+
+// Colours for the animated tab bar's active-tab disc.
+const TAB_COLORS: Record<string, string> = {
+  "/dashboard": "#6366f1",
+  "/expenses": "#10b981",
+  "/admin": "#f59e0b",
+  "/settings": "#ec4899",
+};
 
 export default function Shell({
   user,
@@ -31,6 +49,16 @@ export default function Shell({
       ? [...LINKS, { href: "/admin", label: "Admin", icon: Settings2 }, SETTINGS_LINK]
       : [...LINKS, SETTINGS_LINK];
 
+  const tabLinks: TabLink[] = links.map((link) => {
+    const Icon = link.icon;
+    return {
+      href: link.href,
+      color: TAB_COLORS[link.href] ?? "#6366f1",
+      icon: <Icon className="icon" aria-hidden />,
+    };
+  });
+
+  const firstName = user.name.split(" ")[0] || user.name;
   const initials = user.name
     .split(" ")
     .map((part) => part[0])
@@ -41,16 +69,24 @@ export default function Shell({
 
   return (
     <div className="flex min-h-[100dvh] flex-col">
+      <NavProgress />
+      <WelcomeSplash name={user.name} />
+
       <header className="bg-background/80 safe-top sticky top-0 z-30 border-b backdrop-blur-xl">
         <div className="mx-auto flex h-14 w-full max-w-5xl items-center gap-3 px-4">
           <Link
             href="/dashboard"
-            className="flex items-center gap-2 font-semibold tracking-tight transition-opacity hover:opacity-80"
+            prefetch
+            className="flex items-center gap-2.5 transition-opacity hover:opacity-80"
+            onClick={() => window.dispatchEvent(new Event("nav:start"))}
           >
             <span className="bg-primary text-primary-foreground grid size-8 place-items-center rounded-lg text-sm font-bold shadow-sm">
               ₹
             </span>
-            <span className="hidden sm:inline">PayTrack</span>
+            <span className="leading-tight">
+              <span className="block text-[11px] font-medium text-muted-foreground">Hi,</span>
+              <span className="block text-sm font-semibold tracking-tight">{firstName}</span>
+            </span>
           </Link>
 
           {/* Desktop navigation. On phones the tab bar at the bottom takes over. */}
@@ -60,6 +96,7 @@ export default function Shell({
                 key={link.href}
                 href={link.href}
                 prefetch
+                onClick={() => window.dispatchEvent(new Event("nav:start"))}
                 className={cn(
                   "rounded-lg px-3 py-2 text-sm font-medium transition-all duration-200",
                   pathname === link.href
@@ -79,20 +116,15 @@ export default function Shell({
               onClick={() => setTheme(resolved === "dark" ? "light" : "dark")}
               aria-label={resolved === "dark" ? "Switch to light mode" : "Switch to dark mode"}
             >
-              {resolved === "dark" ? (
-                <Sun className="animate-pop" />
-              ) : (
-                <Moon className="animate-pop" />
-              )}
+              {resolved === "dark" ? <Sun className="animate-pop" /> : <Moon className="animate-pop" />}
             </Button>
-            <div className="hidden text-right leading-tight sm:block">
-              <p className="text-sm font-medium">{user.name}</p>
-              <p className="text-muted-foreground text-xs">{ROLE_LABELS[user.role]}</p>
-            </div>
             <Link
               href="/settings"
+              prefetch
               aria-label="Settings"
+              onClick={() => window.dispatchEvent(new Event("nav:start"))}
               className="bg-secondary text-secondary-foreground grid size-9 shrink-0 place-items-center rounded-full text-xs font-semibold transition-transform active:scale-95"
+              title={`${user.name} · ${ROLE_LABELS[user.role]}`}
             >
               {initials || "?"}
             </Link>
@@ -109,42 +141,12 @@ export default function Shell({
         {children}
       </main>
 
-      <nav className="bg-background/85 safe-bottom fixed inset-x-0 bottom-0 z-30 border-t backdrop-blur-xl md:hidden">
-        <div
-          className="mx-auto grid max-w-md px-2 pt-1.5"
-          style={{ gridTemplateColumns: "repeat(" + links.length + ", minmax(0, 1fr))" }}
-        >
-          {links.map((link) => {
-            const active = pathname === link.href;
-            const Icon = link.icon;
-            return (
-              <Link
-                key={link.href}
-                href={link.href}
-                prefetch
-                aria-current={active ? "page" : undefined}
-                className={cn(
-                  "group relative flex flex-col items-center gap-1 py-1.5 text-[11px] font-medium transition-colors duration-200",
-                  active ? "text-primary" : "text-muted-foreground"
-                )}
-              >
-                {/* A rounded pill hugs the whole tab behind the active one. */}
-                <span
-                  className={cn(
-                    "bg-primary/12 absolute inset-x-2 inset-y-0.5 rounded-2xl transition-all duration-300 ease-out",
-                    active ? "scale-100 opacity-100" : "scale-90 opacity-0"
-                  )}
-                />
-                <Icon
-                  className={cn(
-                    "relative size-5 transition-transform duration-300",
-                    active ? "-translate-y-0.5 scale-110" : "group-active:scale-90"
-                  )}
-                />
-                <span className="relative">{link.label}</span>
-              </Link>
-            );
-          })}
+      <nav
+        className="bg-popover/95 safe-bottom fixed inset-x-0 bottom-0 z-30 border-t px-2 pt-3 backdrop-blur-xl md:hidden"
+        style={{ ["--menu-bg" as string]: "var(--popover)" }}
+      >
+        <div className="mx-auto max-w-md">
+          <RoutingTabBar links={tabLinks} />
         </div>
       </nav>
     </div>
