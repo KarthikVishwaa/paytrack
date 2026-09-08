@@ -1,18 +1,23 @@
 import { Card } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
+import { CountMoney, CountNumber } from "@/components/count-up";
 import { cn } from "@/lib/utils";
 import { formatMoney } from "@/lib/money";
 
 export function StatCard({
   label,
   value,
+  count,
   hint,
   tone = "default",
   icon: Icon,
 }: {
   label: string;
-  value: string;
+  /** Static fallback shown when no `count` is given (e.g. "—"). */
+  value?: string;
+  /** When set, the figure counts up from zero on load. */
+  count?: { amount: number; currency?: string; kind?: "money" | "number" };
   hint?: string;
   tone?: "default" | "good" | "warn" | "bad";
   icon?: React.ComponentType<{ className?: string }>;
@@ -24,6 +29,8 @@ export function StatCard({
     bad: "text-destructive",
   }[tone];
 
+  const figure = cn("tabular mt-1 text-xl font-bold tracking-tight sm:text-2xl", toneClass);
+
   return (
     <Card className="gap-2 py-3.5">
       <div className="flex items-start gap-2 px-4">
@@ -31,9 +38,17 @@ export function StatCard({
           <p className="text-muted-foreground text-[11px] font-semibold tracking-wide uppercase">
             {label}
           </p>
-          <p className={cn("tabular mt-1 text-xl font-bold tracking-tight sm:text-2xl", toneClass)}>
-            {value}
-          </p>
+          {count ? (
+            <p className={figure}>
+              {count.kind === "number" ? (
+                <CountNumber value={count.amount} />
+              ) : (
+                <CountMoney value={count.amount} currency={count.currency} />
+              )}
+            </p>
+          ) : (
+            <p className={figure}>{value}</p>
+          )}
           {hint ? <p className="text-muted-foreground mt-0.5 text-xs">{hint}</p> : null}
         </div>
         {Icon ? (

@@ -75,17 +75,11 @@ export default function DashboardClient({ isAdmin }: { isAdmin: boolean }) {
           <h1 className="truncate text-xl font-bold tracking-tight sm:text-2xl">
             {settings.projectName}
           </h1>
-{settings.updatedBy === "system" ? (
-            isAdmin ? (
-              <p className="text-muted-foreground mt-0.5 text-sm">
-                Default budget — change it in Admin
-              </p>
-            ) : null
-          ) : (
+          {settings.updatedBy === "system" && isAdmin ? (
             <p className="text-muted-foreground mt-0.5 text-sm">
-              Budget set by {settings.updatedBy} · {formatDate(settings.updatedAt)}
+              Default budget — change it in Admin
             </p>
-          )}
+          ) : null}
         </div>
         <Button asChild className="hidden sm:inline-flex">
           <Link href="/expenses" prefetch>
@@ -109,13 +103,13 @@ export default function DashboardClient({ isAdmin }: { isAdmin: boolean }) {
       <div className="stagger grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard
           label="Budget"
-          value={formatMoney(totals.budget, currency)}
-          hint="Set by the admin"
+          count={{ amount: totals.budget, currency }}
+          hint="Total available"
           icon={PiggyBank}
         />
         <StatCard
           label="Spent"
-          value={formatMoney(totals.spent, currency)}
+          count={{ amount: totals.spent, currency }}
           hint={
             totals.expenseCount +
             (totals.expenseCount === 1 ? " entry · " : " entries · ") +
@@ -127,14 +121,14 @@ export default function DashboardClient({ isAdmin }: { isAdmin: boolean }) {
         />
         <StatCard
           label="Remaining"
-          value={formatMoney(totals.remaining, currency)}
+          count={{ amount: totals.remaining, currency }}
           hint={overBudget ? "Budget exceeded" : "Left to spend"}
           tone={overBudget ? "bad" : "good"}
           icon={TrendingUp}
         />
         <StatCard
           label="This month"
-          value={formatMoney(totals.thisMonth, currency)}
+          count={{ amount: totals.thisMonth, currency }}
           hint="Logged so far this month"
           icon={CalendarDays}
         />
@@ -155,15 +149,15 @@ export default function DashboardClient({ isAdmin }: { isAdmin: boolean }) {
       <div className="stagger grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard
           label="Monthly cost"
-          value={formatMoney(totals.monthlyRunRate, currency)}
+          count={{ amount: totals.monthlyRunRate, currency }}
           hint="Everything marked monthly"
           tone={overCap ? "warn" : "default"}
           icon={Repeat}
         />
         <StatCard
           label="Monthly cap"
-          value={formatMoney(totals.monthlyInfraBudget, currency)}
-          hint={overCap ? "Run rate is above this" : "Set by the admin"}
+          count={{ amount: totals.monthlyInfraBudget, currency }}
+          hint={overCap ? "Run rate is above this" : "Recurring limit"}
           tone={overCap ? "warn" : "default"}
         />
         <StatCard
@@ -175,7 +169,7 @@ export default function DashboardClient({ isAdmin }: { isAdmin: boolean }) {
         />
         <StatCard
           label="Entries"
-          value={String(totals.expenseCount)}
+          count={{ amount: totals.expenseCount, kind: "number" }}
           hint="Logged by the team"
           icon={ListChecks}
         />

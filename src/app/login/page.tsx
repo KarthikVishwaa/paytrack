@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import InstallBanner from "@/components/install-banner";
 import { api } from "@/lib/client";
 
 export default function LoginPage() {
@@ -132,6 +133,8 @@ export default function LoginPage() {
             </form>
           </CardContent>
         </Card>
+
+        <InstallBanner />
       </div>
     </div>
   );

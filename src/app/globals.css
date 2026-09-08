@@ -42,8 +42,12 @@
   --cat-salary: oklch(0.6 0.2 330);
   --cat-other: oklch(0.6 0.03 275);
 
-  /* The spotlight that follows the pointer across a card. */
-  --spotlight: rgba(99, 102, 241, 0.18);
+  /* Chart accent — a solid, readable bar colour in both themes. */
+  --chart-1: oklch(0.55 0.21 277);
+
+  /* Gradient-card surface: a soft sheen over the card colour. */
+  --card-grad-top: oklch(1 0 0);
+  --card-grad-bottom: oklch(0.985 0.006 277);
 }
 
 /* Dark mode is true black: easier on the eyes at night and it saves power on OLED phones. */
@@ -83,7 +87,11 @@
   --cat-salary: oklch(0.72 0.18 330);
   --cat-other: oklch(0.65 0.03 275);
 
-  --spotlight: rgba(129, 140, 248, 0.22);
+  /* Brighter bar so it reads against the true-black background. */
+  --chart-1: oklch(0.7 0.18 277);
+
+  --card-grad-top: oklch(0.2 0.014 277);
+  --card-grad-bottom: oklch(0.145 0.008 275);
 }
 
 @theme inline {
@@ -138,6 +146,23 @@
     font-variant-numeric: tabular-nums;
     font-feature-settings: "tnum";
   }
+}
+
+/* Gradient card surface: a diagonal sheen from a lighter top corner down to
+   the base card colour. Kept subtle so text stays crisp in both themes. */
+.gradient-card {
+  background-image: linear-gradient(
+    145deg,
+    var(--card-grad-top) 0%,
+    var(--card-grad-bottom) 62%
+  );
+  border-color: color-mix(in oklch, var(--border) 78%, transparent);
+}
+.dark .gradient-card {
+  border-color: color-mix(in oklch, var(--border) 90%, transparent);
+  box-shadow:
+    0 1px 0 0 oklch(1 0 0 / 0.03) inset,
+    0 8px 24px -12px oklch(0 0 0 / 0.6);
 }
 
 /* Respect the notch / home indicator on phones. */
@@ -203,6 +228,23 @@
   to {
     background-position: -200% 0;
   }
+}
+
+/* Whole-screen swap between routes so navigation feels like an app, not a
+   page load. Content slides up a touch and fades in. */
+@keyframes page-swap {
+  from {
+    opacity: 0;
+    transform: translateY(12px) scale(0.995);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+.animate-page {
+  animation: page-swap 340ms cubic-bezier(0.22, 1, 0.36, 1) both;
 }
 
 .animate-rise {

@@ -2,12 +2,31 @@
 
 import * as React from "react";
 
-import SpotlightCard from "@/components/SpotlightCard";
 import { cn } from "@/lib/utils";
 
-/** Every card in the app carries the spotlight effect. */
-function Card({ className, ...props }: React.ComponentProps<typeof SpotlightCard>) {
-  return <SpotlightCard className={className} {...props} />;
+/**
+ * Gradient card: a soft top-down sheen over the card surface, a hairline top
+ * highlight and a quiet shadow. Looks premium in both the light and true-black
+ * themes without any pointer tracking.
+ */
+function Card({ className, children, ...props }: React.ComponentProps<"div">) {
+  return (
+    <div
+      data-slot="card"
+      className={cn(
+        "gradient-card text-card-foreground relative flex flex-col gap-3 overflow-hidden rounded-2xl border py-4 shadow-sm",
+        className
+      )}
+      {...props}
+    >
+      {/* Hairline highlight along the very top edge. */}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-white/25 to-transparent dark:via-white/10"
+      />
+      {children}
+    </div>
+  );
 }
 
 function CardHeader({ className, ...props }: React.ComponentProps<"div">) {
@@ -54,7 +73,7 @@ function CardAction({ className, ...props }: React.ComponentProps<"div">) {
 }
 
 function CardContent({ className, ...props }: React.ComponentProps<"div">) {
-  return <div data-slot="card-content" className={cn("px-4", className)} {...props} />;
+  return <div data-slot="card-content" className={cn("relative px-4", className)} {...props} />;
 }
 
 function CardFooter({ className, ...props }: React.ComponentProps<"div">) {

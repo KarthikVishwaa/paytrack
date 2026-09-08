@@ -100,8 +100,12 @@ export default function Shell({
         </div>
       </header>
 
-      {/* pb leaves room for the mobile tab bar so nothing hides behind it. */}
-      <main className="animate-fade mx-auto w-full max-w-5xl flex-1 px-4 pt-4 pb-28 md:pb-10">
+      {/* pb leaves room for the mobile tab bar so nothing hides behind it.
+          key on the pathname replays the swap animation on every route change. */}
+      <main
+        key={pathname}
+        className="animate-page mx-auto w-full max-w-5xl flex-1 px-4 pt-4 pb-28 md:pb-10"
+      >
         {children}
       </main>
 
@@ -120,21 +124,21 @@ export default function Shell({
                 prefetch
                 aria-current={active ? "page" : undefined}
                 className={cn(
-                  "group relative flex flex-col items-center gap-1 rounded-xl px-2 py-1.5 text-[11px] font-medium transition-colors duration-200 active:scale-95",
+                  "group relative flex flex-col items-center gap-1 py-1.5 text-[11px] font-medium transition-colors duration-200",
                   active ? "text-primary" : "text-muted-foreground"
                 )}
               >
-                {/* The pill fades in behind whichever tab is open. */}
+                {/* A rounded pill hugs the whole tab behind the active one. */}
                 <span
                   className={cn(
-                    "bg-primary/12 absolute inset-x-2 top-1 h-8 rounded-full transition-all duration-300",
-                    active ? "scale-100 opacity-100" : "scale-75 opacity-0"
+                    "bg-primary/12 absolute inset-x-2 inset-y-0.5 rounded-2xl transition-all duration-300 ease-out",
+                    active ? "scale-100 opacity-100" : "scale-90 opacity-0"
                   )}
                 />
                 <Icon
                   className={cn(
                     "relative size-5 transition-transform duration-300",
-                    active ? "-translate-y-0.5 scale-110" : "group-active:scale-95"
+                    active ? "-translate-y-0.5 scale-110" : "group-active:scale-90"
                   )}
                 />
                 <span className="relative">{link.label}</span>

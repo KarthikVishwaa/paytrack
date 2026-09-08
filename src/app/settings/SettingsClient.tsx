@@ -2,11 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { LogOut, Monitor, Moon, Smartphone, Sun } from "lucide-react";
+import { LogOut, Monitor, Moon, Sun } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import InstallApp from "@/components/install-app";
 import { useTheme, type Theme } from "@/components/theme";
 import { cn } from "@/lib/utils";
 import { ROLE_LABELS, type SessionUser } from "@/lib/types";
@@ -69,21 +68,6 @@ export default function SettingsClient({ user }: { user: SessionUser }) {
               );
             })}
           </div>
-        </CardContent>
-      </Card>
-
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2 text-base">
-            <Smartphone className="size-4" /> Install on your phone
-          </CardTitle>
-          <CardDescription>
-            Add PayTrack to the home screen and it opens like a normal app — full screen, no
-            browser bar.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          <InstallApp />
         </CardContent>
       </Card>
 
