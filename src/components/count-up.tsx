@@ -1,44 +1,50 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef } from "react";
 
 import { formatMoney } from "@/lib/money";
 
 /**
- * Counts from 0 up to `target` once on mount (and again whenever the target
- * changes), with an ease-out so it decelerates into the final figure. Honours
- * the OS "reduce motion" setting by jumping straight to the value.
+ * Counts from zero up to `value` once on mount (and again when the value
+ * changes). It writes straight to the DOM node via a single requestAnimationFrame
+ * loop instead of calling setState each frame, so many of these can run at once
+ * without flooding React with re-renders or churning memory. Honours the OS
+ * "reduce motion" setting by showing the final value immediately.
  */
-function useCountUp(target: number, duration = 900): number {
-  const [value, setValue] = useState(target === 0 ? 0 : 0);
-  const frame = useRef(0);
-
+function useCountUp(
+  el: React.RefObject<HTMLElement | null>,
+  value: number,
+  format: (n: number) => string,
+  duration = 850
+) {
   useEffect(() => {
+    const node = el.current;
+    if (!node) return;
+
     const reduce =
       typeof window !== "undefined" &&
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-    if (reduce || target === 0) {
-      setValue(target);
+
+    if (reduce || value === 0) {
+      node.textContent = format(value);
       return;
     }
 
+    let raf = 0;
     let start: number | null = null;
-    const from = 0;
 
     const tick = (now: number) => {
       if (start === null) start = now;
-      const progress = Math.min((now - start) / duration, 1);
-      const eased = 1 - Math.pow(1 - progress, 3);
-      setValue(from + (target - from) * eased);
-      if (progress < 1) frame.current = requestAnimationFrame(tick);
-      else setValue(target);
+      const t = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - t, 3);
+      node.textContent = format(value * eased);
+      if (t < 1) raf = requestAnimationFrame(tick);
+      else node.textContent = format(value);
     };
 
-    frame.current = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(frame.current);
-  }, [target, duration]);
-
-  return value;
+    raf = requestAnimationFrame(tick);
+    return () => cancelAnimationFrame(raf);
+  }, [el, value, format, duration]);
 }
 
 /** A money figure that counts up from zero. */
@@ -51,14 +57,23 @@ export function CountMoney({
   currency?: string;
   className?: string;
 }) {
-  const n = useCountUp(value);
-  // Round to whole rupees while animating so it doesn't flash long decimals.
-  const shown = Math.abs(n - value) < 0.5 ? value : Math.round(n);
-  return <span className={className}>{formatMoney(shown, currency)}</span>;
+  const ref = useRef<HTMLSpanElement>(null);
+  useCountUp(ref, value, (n) => formatMoney(Math.round(n), currency));
+  // Server render / first paint shows the final value so there is no flash of 0.
+  return (
+    <span ref={ref} className={className}>
+      {formatMoney(value, currency)}
+    </span>
+  );
 }
 
 /** A plain integer that counts up from zero. */
 export function CountNumber({ value, className }: { value: number; className?: string }) {
-  const n = useCountUp(value);
-  return <span className={className}>{Math.round(n).toLocaleString("en-IN")}</span>;
+  const ref = useRef<HTMLSpanElement>(null);
+  useCountUp(ref, value, (n) => Math.round(n).toLocaleString("en-IN"));
+  return (
+    <span ref={ref} className={className}>
+      {value.toLocaleString("en-IN")}
+    </span>
+  );
 }

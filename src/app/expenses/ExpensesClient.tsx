@@ -396,11 +396,12 @@ export default function ExpensesClient({ user }: { user: SessionUser }) {
         </CardContent>
       </Card>
 
-      {/* Thumb-reachable add button on phones. */}
+      {/* Thumb-reachable add button on phones. Sits above the tab bar (z-40 so
+          the fixed nav never covers it) and clears the notch and the safe area. */}
       <Button
         onClick={startAdd}
         size="lg"
-        className="fixed right-4 bottom-20 z-20 size-14 rounded-full p-0 shadow-lg sm:hidden"
+        className="fixed right-4 bottom-[calc(5.75rem+env(safe-area-inset-bottom))] z-40 size-14 rounded-full p-0 shadow-lg transition-transform active:scale-90 sm:hidden"
         aria-label="Add spending"
       >
         <Plus className="size-6" />

@@ -25,6 +25,9 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 5,
   viewportFit: "cover",
+  // When the on-screen keyboard opens, shrink the layout so bottom-anchored
+  // sheets (the Add spending form) stay fully above it instead of hiding under.
+  interactiveWidget: "resizes-content",
   themeColor: [
     { media: "(prefers-color-scheme: light)", color: "#f7f7fb" },
     { media: "(prefers-color-scheme: dark)", color: "#000000" },

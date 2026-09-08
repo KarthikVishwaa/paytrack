@@ -250,12 +250,6 @@
 /* ---- Animated tab bar (mobile bottom nav) ---------------------------
    A row of icon buttons; the active one lifts onto a coloured disc while a
    notch of the bar's own colour rises behind it and slides between tabs. */
-@keyframes strok {
-  100% {
-    stroke-dashoffset: 400;
-  }
-}
-
 .svg-container {
   position: absolute;
   width: 0;
@@ -263,7 +257,7 @@
 }
 
 .menu {
-  --timeOut: 0.45s;
+  --timeOut: 0.4s;
   position: relative;
   display: flex;
   align-items: center;
@@ -287,7 +281,7 @@
   background: transparent;
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: transform var(--timeOut) cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform var(--timeOut) cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 /* Coloured disc that rises behind the active icon. */
@@ -303,8 +297,8 @@
   transform: scale(0.4);
   box-shadow: 0 8px 18px -6px var(--bgColorItem);
   transition:
-    opacity var(--timeOut),
-    transform var(--timeOut) cubic-bezier(0.22, 1, 0.36, 1);
+    opacity var(--timeOut) ease,
+    transform var(--timeOut) cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
 .menu__item.active {
@@ -315,21 +309,23 @@
   transform: scale(1);
 }
 
+/* The icon just recolours to white on the active disc — no stroke-dash trick,
+   which was erasing the shorter icon paths and making them vanish on tap. */
 .menu__item .icon {
   position: relative;
   width: 1.4rem;
   height: 1.4rem;
   fill: none;
   stroke: var(--muted-foreground);
-  stroke-width: 1.7;
+  stroke-width: 1.8;
   stroke-linecap: round;
   stroke-linejoin: round;
-  transition: stroke var(--timeOut);
+  transition:
+    stroke var(--timeOut) ease,
+    transform var(--timeOut) cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .menu__item.active .icon {
   stroke: #fff;
-  stroke-dasharray: 400;
-  animation: strok 1.4s ease forwards;
 }
 
 /* The notch that dips into the top edge of the bar, following the active tab. */
@@ -341,7 +337,8 @@
   height: 1.1rem;
   background: var(--menu-bg, var(--popover));
   clip-path: url(#menu-clip-path);
-  transition: transform var(--timeOut) cubic-bezier(0.22, 1, 0.36, 1);
+  transition: transform var(--timeOut) cubic-bezier(0.34, 1.56, 0.64, 1);
+  will-change: transform;
   pointer-events: none;
 }
 
