@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-import { LogOut, Monitor, Moon, Sun } from "lucide-react";
+import { LogOut, Moon, Sun } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,7 +14,6 @@ const OPTIONS: { value: Theme; label: string; icon: React.ComponentType<{ classN
   [
     { value: "light", label: "Light", icon: Sun },
     { value: "dark", label: "Black", icon: Moon },
-    { value: "system", label: "System", icon: Monitor },
   ];
 
 export default function SettingsClient({ user }: { user: SessionUser }) {
@@ -46,7 +45,7 @@ export default function SettingsClient({ user }: { user: SessionUser }) {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             {OPTIONS.map((option) => {
               const Icon = option.icon;
               const active = theme === option.value;

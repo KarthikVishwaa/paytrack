@@ -2,51 +2,43 @@
 
 import { createContext, useCallback, useContext, useEffect, useState } from "react";
 
-export type Theme = "light" | "dark" | "system";
+/** Just the two — no "System" option, so the app never inherits some other look. */
+export type Theme = "light" | "dark";
 
 const STORAGE_KEY = "paytrack-theme";
 
 interface ThemeContextValue {
   theme: Theme;
-  resolved: "light" | "dark";
+  resolved: Theme;
   setTheme: (theme: Theme) => void;
 }
 
 const ThemeContext = createContext<ThemeContextValue>({
-  theme: "system",
+  theme: "light",
   resolved: "light",
   setTheme: () => {},
 });
 
 /** Applies the theme to <html> and remembers the choice on this device. */
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>("system");
-  const [resolved, setResolved] = useState<"light" | "dark">("light");
+  const [theme, setThemeState] = useState<Theme>("light");
 
   const apply = useCallback((next: Theme) => {
-    const dark =
-      next === "dark" ||
-      (next === "system" && window.matchMedia("(prefers-color-scheme: dark)").matches);
-    document.documentElement.classList.toggle("dark", dark);
-    document.documentElement.style.colorScheme = dark ? "dark" : "light";
-    setResolved(dark ? "dark" : "light");
+    document.documentElement.classList.toggle("dark", next === "dark");
+    document.documentElement.style.colorScheme = next;
   }, []);
 
   useEffect(() => {
-    const saved = (localStorage.getItem(STORAGE_KEY) as Theme | null) ?? "system";
-    setThemeState(saved);
-    apply(saved);
-
-    // Follow the phone's setting live while "System" is selected.
-    const media = window.matchMedia("(prefers-color-scheme: dark)");
-    const onChange = () => {
-      if ((localStorage.getItem(STORAGE_KEY) as Theme | null) !== "dark" &&
-          (localStorage.getItem(STORAGE_KEY) as Theme | null) !== "light") {
-        apply("system");
-      }
-    };
-    media.addEventListener("change", onChange);
-    return () => media.removeEventListener("change", onChange);
+    const saved = localStorage.getItem(STORAGE_KEY) as Theme | null;
+    // No choice saved yet — start from the device's own setting, once.
+    const initial =
+      saved === "dark" || saved === "light"
+        ? saved
+        : window.matchMedia("(prefers-color-scheme: dark)").matches
+          ? "dark"
+          : "light";
+    setThemeState(initial);
+    apply(initial);
   }, [apply]);
 
   const setTheme = useCallback(
@@ -63,7 +55,9 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   );
 
   return (
-    <ThemeContext.Provider value={{ theme, resolved, setTheme }}>{children}</ThemeContext.Provider>
+    <ThemeContext.Provider value={{ theme, resolved: theme, setTheme }}>
+      {children}
+    </ThemeContext.Provider>
   );
 }
 
@@ -74,8 +68,8 @@ export function useTheme() {
 /** Runs before the first paint so the app never flashes the wrong theme. */
 export const themeScript = `
 try {
-  var t = localStorage.getItem('${STORAGE_KEY}') || 'system';
-  var dark = t === 'dark' || (t === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  var saved = localStorage.getItem('${STORAGE_KEY}');
+  var dark = saved === 'dark' || (saved !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
   if (dark) { document.documentElement.classList.add('dark'); }
   document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
 } catch (e) {}
