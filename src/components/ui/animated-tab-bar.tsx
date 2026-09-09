@@ -5,7 +5,6 @@ import { useState, useRef, useLayoutEffect, useCallback, useEffect } from "react
 
 export interface TabItem {
   icon: React.ReactNode;
-  color: string;
   label?: string;
 }
 
@@ -92,7 +91,6 @@ export const AnimatedTabBar: React.FC<AnimatedTabBarProps> = ({
                 itemRefs.current[index] = el;
               }}
               className={`menu__item ${activeIndex === index ? "active" : ""}`}
-              style={{ "--bgColorItem": item.color } as React.CSSProperties}
               onClick={() => handleItemClick(index)}
               aria-label={item.label ?? `Tab ${index + 1}`}
             >
@@ -100,8 +98,7 @@ export const AnimatedTabBar: React.FC<AnimatedTabBarProps> = ({
             </button>
             {item.label ? (
               <span
-                className="menu__item-label"
-                style={activeIndex === index ? { color: item.color } : undefined}
+                className={`menu__item-label ${activeIndex === index ? "active" : ""}`}
               >
                 {item.label}
               </span>

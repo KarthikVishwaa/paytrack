@@ -6,7 +6,6 @@ import { AnimatedTabBar, type TabItem } from "@/components/ui/animated-tab-bar";
 
 export interface TabLink {
   href: string;
-  color: string;
   icon: React.ReactNode;
   label: string;
 }
@@ -23,7 +22,7 @@ export default function RoutingTabBar({ links }: { links: TabLink[] }) {
     0,
     links.findIndex((l) => l.href === pathname)
   );
-  const items: TabItem[] = links.map((l) => ({ icon: l.icon, color: l.color, label: l.label }));
+  const items: TabItem[] = links.map((l) => ({ icon: l.icon, label: l.label }));
 
   return (
     <AnimatedTabBar

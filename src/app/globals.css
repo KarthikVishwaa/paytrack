@@ -251,8 +251,11 @@
 }
 
 /* ---- Animated tab bar (mobile bottom nav) ---------------------------
-   A row of icon buttons; the active one lifts onto a coloured disc while a
-   notch of the bar's own colour rises behind it and slides between tabs. */
+   A row of icon buttons; the active one lifts onto a disc while a notch of
+   the bar's own colour rises behind it and slides between tabs. The disc is
+   plain foreground/background, not a different hue per tab — the darkest
+   tone in light mode, white in dark mode — so the highlight is calm and
+   theme-native rather than a rainbow. */
 .svg-container {
   position: absolute;
   width: 0;
@@ -287,7 +290,8 @@
   transition: transform var(--timeOut) cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 
-/* Coloured disc that rises behind the active icon. */
+/* Disc that rises behind the active icon: foreground-coloured, so it's the
+   darkest tone in light mode and white in dark mode — never a per-tab hue. */
 .menu__item::before {
   content: "";
   position: absolute;
@@ -295,10 +299,10 @@
   width: 2.6rem;
   height: 2.6rem;
   border-radius: 999px;
-  background: var(--bgColorItem);
+  background: var(--foreground);
   opacity: 0;
   transform: scale(0.4);
-  box-shadow: 0 8px 18px -6px var(--bgColorItem);
+  box-shadow: 0 8px 18px -6px color-mix(in oklch, var(--foreground) 45%, transparent);
   transition:
     opacity var(--timeOut) ease,
     transform var(--timeOut) cubic-bezier(0.34, 1.56, 0.64, 1);
@@ -312,8 +316,10 @@
   transform: scale(1);
 }
 
-/* The icon just recolours to white on the active disc — no stroke-dash trick,
-   which was erasing the shorter icon paths and making them vanish on tap. */
+/* The icon recolours to the page background on the active disc, so it
+   always reads against it (background is near-white in light mode, pure
+   black in dark mode — the opposite of the disc's foreground colour). No
+   stroke-dash trick, which was erasing the shorter icon paths on tap. */
 .menu__item .icon {
   position: relative;
   width: 1.4rem;
@@ -328,7 +334,7 @@
     transform var(--timeOut) cubic-bezier(0.34, 1.56, 0.64, 1);
 }
 .menu__item.active .icon {
-  stroke: #fff;
+  stroke: var(--background);
 }
 
 /* Icon button + its caption, stacked — the caption never moves, only the
@@ -346,6 +352,9 @@
   line-height: 1;
   color: var(--muted-foreground);
   transition: color var(--timeOut) ease;
+}
+.menu__item-label.active {
+  color: var(--foreground);
 }
 
 /* The notch that dips into the top edge of the bar, following the active tab. */

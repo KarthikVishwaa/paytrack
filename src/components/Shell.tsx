@@ -30,15 +30,6 @@ const LINKS = [
 
 const SETTINGS_LINK = { href: "/settings", label: "Settings", icon: SlidersHorizontal };
 
-// Colours for the animated tab bar's active-tab disc.
-const TAB_COLORS: Record<string, string> = {
-  "/dashboard": "#6366f1",
-  "/expenses": "#10b981",
-  "/progress": "#06b6d4",
-  "/admin": "#f59e0b",
-  "/settings": "#ec4899",
-};
-
 export default function Shell({
   user,
   children,
@@ -59,7 +50,6 @@ export default function Shell({
     return {
       href: link.href,
       label: link.label,
-      color: TAB_COLORS[link.href] ?? "#6366f1",
       icon: <Icon className="icon" aria-hidden />,
     };
   });
