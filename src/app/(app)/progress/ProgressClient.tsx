@@ -1,6 +1,7 @@
 "use client";
 
-import { Check, Rocket } from "lucide-react";
+import { useState } from "react";
+import { Check, ChevronDown, Rocket } from "lucide-react";
 
 import { Badge } from "@/components/ui/badge";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -14,6 +15,7 @@ import { cn } from "@/lib/utils";
 import {
   overallPercent,
   stagePercent,
+  STAGE_DETAILS,
   STAGE_STATUS_LABELS,
   type StageDoc,
   type StageStatus,
@@ -34,6 +36,7 @@ export default function ProgressClient() {
   const stagesQuery = useStages();
   const settingsQuery = useSettings();
   const summaryQuery = useSummary();
+  const [open, setOpen] = useState<string | null>(null);
 
   if (stagesQuery.error) {
     return (
@@ -128,41 +131,65 @@ export default function ProgressClient() {
 
       <div className="stagger space-y-3">
         {stages.map((stage) => (
-          <StageRow key={stage._id} stage={stage} />
+          <StageRow
+            key={stage._id}
+            stage={stage}
+            open={open === stage._id}
+            onToggle={() => setOpen(open === stage._id ? null : stage._id)}
+          />
         ))}
       </div>
     </div>
   );
 }
 
-function StageRow({ stage }: { stage: StageDoc }) {
+function StageRow({
+  stage,
+  open,
+  onToggle,
+}: {
+  stage: StageDoc;
+  open: boolean;
+  onToggle: () => void;
+}) {
   const percent = stagePercent(stage);
   const tone = TONE[stage.status];
+  const details = STAGE_DETAILS[stage.name] ?? [];
 
   return (
     <Card>
       <CardHeader className="px-4">
-        <div className="flex items-center gap-3">
-          <span
-            className={cn(
-              "tabular grid size-9 shrink-0 place-items-center rounded-xl text-sm font-bold",
-              stage.status === "completed"
-                ? "bg-success/15 text-success"
-                : stage.status === "blocked"
-                  ? "bg-destructive/15 text-destructive"
-                  : "bg-secondary text-muted-foreground"
-            )}
-          >
-            {stage.status === "completed" ? <Check className="size-4" /> : stage.index + 1}
-          </span>
+        <button onClick={onToggle} aria-expanded={open} className="w-full text-left">
+          <div className="flex items-center gap-3">
+            <span
+              className={cn(
+                "tabular grid size-9 shrink-0 place-items-center rounded-xl text-sm font-bold",
+                stage.status === "completed"
+                  ? "bg-success/15 text-success"
+                  : stage.status === "blocked"
+                    ? "bg-destructive/15 text-destructive"
+                    : "bg-secondary text-muted-foreground"
+              )}
+            >
+              {stage.status === "completed" ? <Check className="size-4" /> : stage.index + 1}
+            </span>
 
-          <div className="min-w-0 flex-1">
-            <CardTitle className="text-[15px]">{stage.name}</CardTitle>
-            <p className="text-muted-foreground mt-0.5 line-clamp-1 text-xs">{stage.summary}</p>
+            <div className="min-w-0 flex-1">
+              <CardTitle className="text-[15px]">{stage.name}</CardTitle>
+              <p className="text-muted-foreground mt-0.5 line-clamp-1 text-xs">{stage.summary}</p>
+            </div>
+
+            <span className="tabular shrink-0 text-sm font-semibold">{percent}%</span>
+            {details.length > 0 ? (
+              <ChevronDown
+                className={cn(
+                  "text-muted-foreground size-4 shrink-0 transition-transform duration-200",
+                  open && "rotate-180"
+                )}
+              />
+            ) : null}
           </div>
-
-          <span className="tabular shrink-0 text-sm font-semibold">{percent}%</span>
-        </div>
+        </button>
 
         <div className="mt-2.5">
           <Progress value={percent} indicatorClassName={tone.bar} className="h-1.5" />
@@ -176,6 +203,21 @@ function StageRow({ stage }: { stage: StageDoc }) {
           <p className="text-destructive mt-1.5 text-xs">{stage.note}</p>
         ) : null}
       </CardHeader>
+
+      {open && details.length > 0 ? (
+        <CardContent className="px-4">
+          <ol className="border-t pt-3">
+            {details.map((item, i) => (
+              <li key={i} className="flex gap-2.5 py-1.5 text-sm">
+                <span className="text-muted-foreground tabular w-4 shrink-0 text-right text-xs leading-5">
+                  {i + 1}
+                </span>
+                <span className="min-w-0">{item}</span>
+              </li>
+            ))}
+          </ol>
+        </CardContent>
+      ) : null}
     </Card>
   );
 }

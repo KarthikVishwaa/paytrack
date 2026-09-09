@@ -16,14 +16,15 @@ import { Button } from "@/components/ui/button";
 import { useTheme } from "@/components/theme";
 import RoutingTabBar, { type TabLink } from "@/components/routing-tab-bar";
 import NavProgress from "@/components/nav-progress";
-import WelcomeSplash from "@/components/welcome-splash";
+import StartupLoading from "@/components/startup-loading";
+import SubscriptionBanner from "@/components/subscription-banner";
 import { cn } from "@/lib/utils";
 import { ROLE_LABELS, type SessionUser } from "@/lib/types";
 
 const LINKS = [
-  { href: "/dashboard", label: "Home", icon: LayoutDashboard },
+  { href: "/dashboard", label: "Dashboard", icon: LayoutDashboard },
   { href: "/expenses", label: "Spending", icon: Wallet },
-  { href: "/progress", label: "Progress", icon: Rocket },
+  { href: "/progress", label: "Status", icon: Rocket },
 ];
 
 const SETTINGS_LINK = { href: "/settings", label: "Settings", icon: SlidersHorizontal };
@@ -56,6 +57,7 @@ export default function Shell({
     const Icon = link.icon;
     return {
       href: link.href,
+      label: link.label,
       color: TAB_COLORS[link.href] ?? "#6366f1",
       icon: <Icon className="icon" aria-hidden />,
     };
@@ -73,7 +75,7 @@ export default function Shell({
   return (
     <div className="flex min-h-[100dvh] flex-col">
       <NavProgress />
-      <WelcomeSplash name={user.name} />
+      <StartupLoading />
 
       <header className="bg-background/80 safe-top sticky top-0 z-30 border-b backdrop-blur-xl">
         <div className="mx-auto flex h-14 w-full max-w-5xl items-center gap-3 px-4">
@@ -134,6 +136,8 @@ export default function Shell({
           </div>
         </div>
       </header>
+
+      <SubscriptionBanner />
 
       {/* pb leaves room for the mobile tab bar so nothing hides behind it.
           key on the pathname replays the swap animation on every route change. */}

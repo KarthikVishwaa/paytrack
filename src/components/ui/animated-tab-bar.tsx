@@ -6,6 +6,7 @@ import { useState, useRef, useLayoutEffect, useCallback, useEffect } from "react
 export interface TabItem {
   icon: React.ReactNode;
   color: string;
+  label?: string;
 }
 
 export interface AnimatedTabBarProps {
@@ -85,18 +86,27 @@ export const AnimatedTabBar: React.FC<AnimatedTabBarProps> = ({
 
       <menu className="menu" ref={menuRef}>
         {items.map((item, index) => (
-          <button
-            key={index}
-            ref={(el) => {
-              itemRefs.current[index] = el;
-            }}
-            className={`menu__item ${activeIndex === index ? "active" : ""}`}
-            style={{ "--bgColorItem": item.color } as React.CSSProperties}
-            onClick={() => handleItemClick(index)}
-            aria-label={`Tab ${index + 1}`}
-          >
-            {item.icon}
-          </button>
+          <div className="menu__item-col" key={index}>
+            <button
+              ref={(el) => {
+                itemRefs.current[index] = el;
+              }}
+              className={`menu__item ${activeIndex === index ? "active" : ""}`}
+              style={{ "--bgColorItem": item.color } as React.CSSProperties}
+              onClick={() => handleItemClick(index)}
+              aria-label={item.label ?? `Tab ${index + 1}`}
+            >
+              {item.icon}
+            </button>
+            {item.label ? (
+              <span
+                className="menu__item-label"
+                style={activeIndex === index ? { color: item.color } : undefined}
+              >
+                {item.label}
+              </span>
+            ) : null}
+          </div>
         ))}
         <div className="menu__border" ref={menuBorderRef}></div>
       </menu>

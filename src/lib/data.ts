@@ -10,6 +10,7 @@ import {
   type SessionUser,
   type SettingsDoc,
   type StageDoc,
+  type SubscriptionDoc,
   type UserDoc,
 } from "./types";
 
@@ -72,6 +73,19 @@ async function loadStages(): Promise<StageDoc[]> {
   const seed = defaultStages();
   await stages.insertMany(seed as never[]);
   return seed;
+}
+
+/** Subscriptions the admin is tracking, soonest due date first. */
+export async function getSubscriptions(): Promise<SubscriptionDoc[]> {
+  return cached("subscriptions", loadSubscriptions);
+}
+
+async function loadSubscriptions(): Promise<SubscriptionDoc[]> {
+  const { subscriptions } = await collections();
+  return (await subscriptions
+    .find({})
+    .sort({ dueDate: 1 })
+    .toArray()) as unknown as SubscriptionDoc[];
 }
 
 export interface Summary {

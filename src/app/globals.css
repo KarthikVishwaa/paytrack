@@ -328,6 +328,23 @@
   stroke: #fff;
 }
 
+/* Icon button + its caption, stacked — the caption never moves, only the
+   icon lifts onto its disc, so the label stays put as a steady anchor. */
+.menu__item-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.2rem;
+}
+
+.menu__item-label {
+  font-size: 0.625rem;
+  font-weight: 600;
+  line-height: 1;
+  color: var(--muted-foreground);
+  transition: color var(--timeOut) ease;
+}
+
 /* The notch that dips into the top edge of the bar, following the active tab. */
 .menu__border {
   position: absolute;

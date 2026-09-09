@@ -11,7 +11,14 @@ import type { Redis } from "ioredis";
 const TTL_SECONDS = 120;
 
 /** Every key we cache. Writes clear the lot: the data set is small and always small. */
-export const CACHE_KEYS = ["summary", "settings", "expenses", "users", "stages"] as const;
+export const CACHE_KEYS = [
+  "summary",
+  "settings",
+  "expenses",
+  "users",
+  "stages",
+  "subscriptions",
+] as const;
 export type CacheKey = (typeof CACHE_KEYS)[number];
 
 interface Entry {

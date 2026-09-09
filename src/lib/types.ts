@@ -211,6 +211,145 @@ const STAGE_SEED: { name: string; summary: string }[] = [
   },
 ];
 
+/**
+ * What each stage actually covers, shown when someone taps a stage to expand
+ * it on the Progress page. Keyed by stage name rather than stored on the
+ * document, so it can change without touching anything in the database.
+ */
+export const STAGE_DETAILS: Record<string, string[]> = {
+  "Architecture and setup": [
+    "Cloud infrastructure provisioned in India",
+    "Database designed and deployed",
+    "Automated build pipeline — code to installable app with no manual steps",
+    "Staging environment live — separate from production",
+    "Architecture decisions documented",
+    "API structure defined",
+  ],
+  "User onboarding": [
+    "Language selection",
+    "Phone number login with OTP",
+    "Age verification — under-18 permanently blocked",
+    "Gender selection",
+    "Profile creation — name and illustrated avatar",
+    "Automatic login on app reopen",
+    "Onboarding completes in under 90 seconds",
+  ],
+  "Voice rooms": [
+    "Create and list rooms by language",
+    "Join a room and hear the host speaking",
+    "Real-time speaking indicators",
+    "Listener count updates live",
+    "Request the microphone — enters host's queue",
+    "Host approves or denies speakers",
+    "Host can mute, remove from seat, remove from room",
+    "In-room text chat",
+    "Two phones on separate networks hold a conversation",
+  ],
+  "One-to-one calling": [
+    "See who is online",
+    "Tap to call from a profile",
+    "Incoming call notification on locked screen",
+    "Free first minute with visible countdown",
+    "Paywall at 60 seconds — continue for ₹99",
+    "Paid call with timer and cost display",
+    "Call ends cleanly at zero balance",
+    "Call history — outgoing, incoming, missed",
+    "Call-back from missed calls",
+    "Who-can-call-me privacy setting",
+  ],
+  "Payments and wallet": [
+    "Wallet screen with coin balance",
+    "Coin packs at three price points",
+    "Google Play payment flow — all states handled",
+    "Server verifies every purchase with Google directly",
+    "Interrupted purchase cannot charge twice",
+    "Transaction history — complete and itemised",
+    "Refunds handled automatically when Google issues one",
+    "Purchase confirmation screen with receipt",
+  ],
+  "Gifting and host earnings": [
+    "Gift picker — four tiers",
+    "Gift animation in the room",
+    "Coins deducted from sender, credited to host — one transaction",
+    "Host earnings screen — today, this week, rupee conversion",
+    "Payout threshold and status tracking",
+    "Host KYC collection for payouts",
+  ],
+  "Safety and compliance": [
+    "Report any user — one tap from any avatar",
+    "Block any user — enforced both directions everywhere",
+    "Report categories — harassment, sexual content, asking for money, seems underage, impersonation",
+    "Last 60 seconds of room audio captured automatically with every report",
+    "Moderation console — view reports, play evidence, take action",
+    "Moderation audit log — who decided what, when, on what evidence",
+    "Room auto-closes after three reports in one hour",
+    "Account deletion — in the app and on a web page",
+    "Deleted account genuinely erased — financial and legal records anonymised and retained",
+    "Grievance officer contact published — in the app, on the website, in the privacy policy",
+    "Complaint acknowledged within 24 hours, resolved within 15 days",
+    "180-day log retention within India — CERT-In compliance",
+  ],
+  "Quality and performance": [
+    "Tested on three entry-level phones — 2 GB RAM, ₹8,000 range",
+    "Tested on 3G network speeds",
+    "Tested on Android versions 7 through 15",
+    "App opens in under 3 seconds",
+    "Audio survives screen lock, home button, app switch, incoming phone call",
+    "Audio reconnects automatically after a network drop",
+    "One room tested with 500 simultaneous participants",
+    "Crash rate below 1% of sessions",
+    "Database backup restored successfully — not assumed, actually tested",
+    "Monitoring alerts wired to a phone someone answers at 2am",
+  ],
+  "Play Store submission": [
+    "Store listing complete — name, icon, screenshots, description",
+    "Privacy policy published and linked from inside the app",
+    "Data Safety declaration matches actual app behaviour exactly",
+    "Content rating questionnaire completed accurately",
+    "Every permission justified — only what shipped features need",
+    "Reviewer test credentials prepared",
+    "Submitted to closed testing track",
+    "Incident response plan documented — including 6-hour CERT-In reporting",
+  ],
+  "Closed beta": [
+    "Beta distributed to 100–200 real users",
+    "Onboarding funnel monitored live",
+    "Same-day fixes on critical issues",
+    "Every report in the moderation queue answered within 24 hours",
+    "First-session speak rate measured — target 25%",
+    "Day-1 retention measured — target 30%",
+    "Day-7 retention measured — target 12%",
+    "Coin purchase conversion measured — target 2%",
+    "Actual voice minute cost compared against budget",
+    "Beta review completed — decision on what changes before public launch",
+  ],
+  "Voice Moments": [
+    "Daily random notification between 6pm and 11pm",
+    "30-second voice recording — two-minute window, no filters, no re-recording",
+    "Must share your moment before listening to anyone else's",
+    "Moment appears on your profile for 24 hours, then expires",
+    "Late moments accepted but marked late",
+    "Three consecutive misses dim the badge",
+    "Voice replies — 15-second response to someone's moment",
+    "Moderation — same report queue as rooms, same evidence rules",
+  ],
+  Games: [
+    "Games section in the bottom navigation — separate from rooms",
+    "Three free game sessions per day — unlimited for subscribers",
+    "Tambola / Housie — room-based, voice on during play",
+    "Word chain / Antakshari — turn-based, voice on",
+    "Movie quiz — buzz-in format, fixed question bank from server",
+    "Daily challenge at 7pm — leaderboard resets at midnight",
+    "24-hour winner badge — visible in rooms and on calls",
+    "Weekly tournament — Sunday 8pm, bracket format, crown badge",
+    "Friends list carries across — invite friends to a table",
+    "Ludo — turn-based, 2–4 players",
+    "Carrom — real-time with physics",
+    "Truth or Dare — fixed prompts, not user-generated",
+    "Coin-entry games — only after legal approval per state",
+  ],
+};
+
 /** The roadmap as it starts out: every stage not started. */
 export function defaultStages(): StageDoc[] {
   const now = new Date().toISOString();
@@ -240,4 +379,29 @@ export function overallPercent(stages: StageDoc[]): number {
   if (stages.length === 0) return 0;
   const total = stages.reduce((sum, s) => sum + stagePercent(s), 0);
   return Math.round(total / stages.length);
+}
+
+// ---- Subscription reminders ---------------------------------------------
+// Recurring bills the admin wants a heads-up on before they renew — a domain,
+// hosting, the Play Console — so the team can have the payment ready in time.
+
+export interface SubscriptionDoc {
+  _id: string;
+  title: string;
+  /** The next renewal date, YYYY-MM-DD. */
+  dueDate: string;
+  /** What it costs to renew. 0 if the admin didn't set one. */
+  amount: number;
+  createdAt: string;
+  createdBy: string;
+  updatedAt: string;
+  updatedBy: string;
+}
+
+/** Whole days from today until the due date. Negative once it's overdue. Always worked out fresh from today's date, never stored. */
+export function daysUntil(dueDate: string): number {
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const due = new Date(dueDate + "T00:00:00");
+  return Math.round((due.getTime() - today.getTime()) / 86400000);
 }

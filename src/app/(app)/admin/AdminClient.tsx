@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import {
+  CalendarClock,
   DatabaseBackup,
   Download,
   KeyRound,
@@ -26,9 +27,19 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/money-ui";
-import { api, refreshAll, useBackups, useSettings, useStages, useUsers } from "@/lib/client";
-import { formatMoney } from "@/lib/money";
+import { WINDOW_DAYS } from "@/components/subscription-banner";
 import {
+  api,
+  refreshAll,
+  useBackups,
+  useSettings,
+  useStages,
+  useSubscriptions,
+  useUsers,
+} from "@/lib/client";
+import { formatMoney, todayISO } from "@/lib/money";
+import {
+  daysUntil,
   ROLES,
   ROLE_LABELS,
   STAGE_STATUSES,
@@ -37,6 +48,7 @@ import {
   type SettingsDoc,
   type StageDoc,
   type StageStatus,
+  type SubscriptionDoc,
   type UserDoc,
 } from "@/lib/types";
 
@@ -49,11 +61,13 @@ export default function AdminClient({ meId }: { meId: string }) {
   const usersQuery = useUsers();
   const backupsQuery = useBackups();
   const stagesQuery = useStages();
+  const subscriptionsQuery = useSubscriptions();
 
   const settings = settingsQuery.data?.settings;
   const users = usersQuery.data?.users;
   const backups = backupsQuery.data?.backups;
   const stages = stagesQuery.data?.stages;
+  const subscriptions = subscriptionsQuery.data?.subscriptions;
 
   const [budgetForm, setBudgetForm] = useState({
     projectName: "",
@@ -70,6 +84,7 @@ export default function AdminClient({ meId }: { meId: string }) {
     role: "developer" as Role,
     password: "",
   });
+  const [newSubscription, setNewSubscription] = useState({ title: "", dueDate: "", amount: "" });
   const [busy, setBusy] = useState("");
   const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
 
@@ -174,6 +189,32 @@ export default function AdminClient({ meId }: { meId: string }) {
       });
       toast.success("Note saved");
       stagesQuery.mutate();
+    } catch (err) {
+      toast.error((err as Error).message);
+    }
+  }
+
+  async function addSubscription(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy("subscription");
+    try {
+      await api("/api/subscriptions", { method: "POST", body: JSON.stringify(newSubscription) });
+      toast.success(newSubscription.title + " added");
+      setNewSubscription({ title: "", dueDate: "", amount: "" });
+      subscriptionsQuery.mutate();
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function removeSubscription(s: SubscriptionDoc) {
+    if (!confirm("Remove " + s.title + "?")) return;
+    try {
+      await api("/api/subscriptions/" + s._id, { method: "DELETE" });
+      toast.success(s.title + " removed");
+      subscriptionsQuery.mutate();
     } catch (err) {
       toast.error((err as Error).message);
     }
@@ -366,6 +407,112 @@ export default function AdminClient({ meId }: { meId: string }) {
               </Button>
             </form>
           )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <CalendarClock className="size-4" /> Upcoming subscriptions
+          </CardTitle>
+          <CardDescription>
+            Renewals coming up — a reminder shows on every page starting {WINDOW_DAYS} days out,
+            so there is time to have the payment ready.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {subscriptionsQuery.error ? (
+            <ErrorState
+              message={(subscriptionsQuery.error as Error).message}
+              onRetry={() => subscriptionsQuery.mutate()}
+            />
+          ) : !subscriptions ? (
+            <ListSkeleton rows={2} />
+          ) : subscriptions.length === 0 ? (
+            <EmptyState
+              title="Nothing tracked yet"
+              hint="Add a domain, hosting or Play Console renewal below."
+              icon={CalendarClock}
+            />
+          ) : (
+            <ul className="divide-y">
+              {subscriptions.map((s) => {
+                const days = daysUntil(s.dueDate);
+                return (
+                  <li key={s._id} className="flex items-center gap-2 py-3 first:pt-0">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium">{s.title}</p>
+                      <p className="text-muted-foreground text-xs">
+                        {s.dueDate}
+                        {s.amount ? " · " + formatMoney(s.amount, settings?.currency) : ""}
+                      </p>
+                    </div>
+                    <Badge variant={days < 0 ? "destructive" : days <= 7 ? "warning" : "secondary"}>
+                      {days < 0
+                        ? Math.abs(days) + "d overdue"
+                        : days === 0
+                          ? "today"
+                          : "in " + days + "d"}
+                    </Badge>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="text-destructive size-9"
+                      onClick={() => removeSubscription(s)}
+                      aria-label="Remove"
+                    >
+                      <Trash2 className="size-4" />
+                    </Button>
+                  </li>
+                );
+              })}
+            </ul>
+          )}
+
+          <Separator />
+
+          <form onSubmit={addSubscription} className="space-y-3">
+            <div className="grid gap-3 sm:grid-cols-3">
+              <div className="space-y-1.5">
+                <Label htmlFor="subTitle">Title</Label>
+                <Input
+                  id="subTitle"
+                  value={newSubscription.title}
+                  onChange={(e) => setNewSubscription({ ...newSubscription, title: e.target.value })}
+                  placeholder="Domain renewal"
+                  required
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="subDueDate">Due date</Label>
+                <Input
+                  id="subDueDate"
+                  type="date"
+                  min={todayISO()}
+                  value={newSubscription.dueDate}
+                  onChange={(e) =>
+                    setNewSubscription({ ...newSubscription, dueDate: e.target.value })
+                  }
+                  required
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="subAmount">Amount (optional)</Label>
+                <Input
+                  id="subAmount"
+                  inputMode="decimal"
+                  value={newSubscription.amount}
+                  onChange={(e) =>
+                    setNewSubscription({ ...newSubscription, amount: e.target.value })
+                  }
+                  placeholder="0"
+                />
+              </div>
+            </div>
+            <Button type="submit" variant="outline" disabled={busy === "subscription"}>
+              {busy === "subscription" ? "Adding…" : "Add subscription"}
+            </Button>
+          </form>
         </CardContent>
       </Card>
 

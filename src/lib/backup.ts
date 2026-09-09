@@ -11,7 +11,7 @@
  */
 import { collections } from "./mongodb";
 import { cacheBust } from "./cache";
-import type { ExpenseDoc, SettingsDoc, StageDoc, UserDoc } from "./types";
+import type { ExpenseDoc, SettingsDoc, StageDoc, SubscriptionDoc, UserDoc } from "./types";
 
 const KEEP = 20;
 const AUTO_EVERY_MS = 60 * 60 * 1000; // one hour
@@ -32,6 +32,7 @@ export interface BackupDoc extends BackupSummary {
     settings: SettingsDoc | null;
     expenses: ExpenseDoc[];
     stages: StageDoc[];
+    subscriptions: SubscriptionDoc[];
   };
 }
 
@@ -39,13 +40,14 @@ export async function createBackup(
   createdBy: string,
   reason: BackupReason = "manual"
 ): Promise<BackupSummary> {
-  const { users, settings, expenses, stages } = await collections();
+  const { users, settings, expenses, stages, subscriptions } = await collections();
 
-  const [userRows, settingsRow, expenseRows, stageRows] = await Promise.all([
+  const [userRows, settingsRow, expenseRows, stageRows, subscriptionRows] = await Promise.all([
     users.find({}).toArray() as unknown as Promise<UserDoc[]>,
     settings.findOne({ _id: "app" as never }) as unknown as Promise<SettingsDoc | null>,
     expenses.find({}).toArray() as unknown as Promise<ExpenseDoc[]>,
     stages.find({}).sort({ index: 1 }).toArray() as unknown as Promise<StageDoc[]>,
+    subscriptions.find({}).sort({ dueDate: 1 }).toArray() as unknown as Promise<SubscriptionDoc[]>,
   ]);
 
   const doc: BackupDoc = {
@@ -62,6 +64,7 @@ export async function createBackup(
       settings: settingsRow,
       expenses: expenseRows,
       stages: stageRows,
+      subscriptions: subscriptionRows,
     },
   };
 
@@ -108,19 +111,23 @@ export async function restoreBackup(
 
   await createBackup(restoredBy, "before-restore");
 
-  const { users, settings, expenses, stages } = await collections();
+  const { users, settings, expenses, stages, subscriptions } = await collections();
   await Promise.all([
     users.deleteMany({}),
     settings.deleteMany({}),
     expenses.deleteMany({}),
     stages.deleteMany({}),
+    subscriptions.deleteMany({}),
   ]);
 
   if (snapshot.data.users.length) await users.insertMany(snapshot.data.users as never[]);
   if (snapshot.data.settings) await settings.insertOne(snapshot.data.settings as never);
   if (snapshot.data.expenses.length) await expenses.insertMany(snapshot.data.expenses as never[]);
-  // Older backups predate the roadmap, so guard the field.
+  // Older backups predate these fields, so guard them.
   if (snapshot.data.stages?.length) await stages.insertMany(snapshot.data.stages as never[]);
+  if (snapshot.data.subscriptions?.length) {
+    await subscriptions.insertMany(snapshot.data.subscriptions as never[]);
+  }
 
   await cacheBust();
   return snapshot.counts;
