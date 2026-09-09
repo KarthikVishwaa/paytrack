@@ -65,12 +65,19 @@ export function useTheme() {
   return useContext(ThemeContext);
 }
 
-/** Runs before the first paint so the app never flashes the wrong theme. */
+/**
+ * Runs before the first paint so the app never flashes the wrong theme. Sets
+ * the background colour directly via inline style — not just the .dark class
+ * — because that paints immediately, without waiting on globals.css to finish
+ * downloading. On a slow first load, waiting for the stylesheet is exactly
+ * what shows up as a flash of plain white before the app's own background.
+ */
 export const themeScript = `
 try {
   var saved = localStorage.getItem('${STORAGE_KEY}');
   var dark = saved === 'dark' || (saved !== 'light' && window.matchMedia('(prefers-color-scheme: dark)').matches);
   if (dark) { document.documentElement.classList.add('dark'); }
   document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+  document.documentElement.style.backgroundColor = dark ? '#000000' : '#f7f7fb';
 } catch (e) {}
 `;

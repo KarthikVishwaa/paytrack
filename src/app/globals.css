@@ -132,6 +132,9 @@
   html {
     -webkit-tap-highlight-color: transparent;
     scroll-behavior: smooth;
+    /* Static fallback for the inline theme script's own background-color —
+       covers the rare case JS is unavailable, once this stylesheet is in. */
+    background: var(--background);
   }
   body {
     @apply bg-background text-foreground antialiased;
