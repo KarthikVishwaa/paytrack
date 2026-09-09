@@ -17,6 +17,13 @@ function useCountUp(
   format: (n: number) => string,
   duration = 850
 ) {
+  // `format` is a fresh closure every render (it's created inline by callers).
+  // Keeping the latest one in a ref — instead of the effect's own dependency
+  // list — means an unrelated re-render doesn't restart the animation; only an
+  // actual change in `value` does.
+  const formatRef = useRef(format);
+  formatRef.current = format;
+
   useEffect(() => {
     const node = el.current;
     if (!node) return;
@@ -26,7 +33,7 @@ function useCountUp(
       window.matchMedia("(prefers-reduced-motion: reduce)").matches;
 
     if (reduce || value === 0) {
-      node.textContent = format(value);
+      node.textContent = formatRef.current(value);
       return;
     }
 
@@ -37,16 +44,16 @@ function useCountUp(
       if (start === null) start = now;
       const t = Math.min((now - start) / duration, 1);
       const eased = 1 - Math.pow(1 - t, 3);
-      node.textContent = format(value * eased);
+      node.textContent = formatRef.current(value * eased);
       if (t < 1) raf = requestAnimationFrame(tick);
-      else node.textContent = format(value);
+      else node.textContent = formatRef.current(value);
     };
 
     // If the tab is hidden mid-count, jump to the final figure instead of
     // leaving a frame queued for whenever the tab comes back.
     const settle = () => {
       cancelAnimationFrame(raf);
-      node.textContent = format(value);
+      node.textContent = formatRef.current(value);
     };
     window.addEventListener("app:suspend", settle);
 
@@ -55,7 +62,7 @@ function useCountUp(
       cancelAnimationFrame(raf);
       window.removeEventListener("app:suspend", settle);
     };
-  }, [el, value, format, duration]);
+  }, [el, value, duration]);
 }
 
 /** A money figure that counts up from zero. */
