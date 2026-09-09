@@ -104,7 +104,7 @@ export default function SignupPage() {
                     id="name"
                     value={form.name}
                     onChange={(e) => setForm({ ...form, name: e.target.value })}
-                    placeholder="Priya S"
+                    placeholder="Full name"
                     required
                   />
                 </div>

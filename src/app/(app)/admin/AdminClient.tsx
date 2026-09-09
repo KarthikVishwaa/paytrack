@@ -689,7 +689,7 @@ export default function AdminClient({ meId }: { meId: string }) {
                   id="memberName"
                   value={newUser.name}
                   onChange={(e) => setNewUser({ ...newUser, name: e.target.value })}
-                  placeholder="Priya S"
+                  placeholder="Full name"
                   required
                 />
               </div>

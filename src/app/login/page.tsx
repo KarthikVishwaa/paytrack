@@ -122,13 +122,14 @@ export default function LoginPage() {
                   You will be the host: only this account can set the budget and manage members.
                 </p>
               ) : (
-                <p className="text-muted-foreground text-center text-xs">
-                  No account yet?{" "}
-                  <Link href="/signup" className="text-primary font-semibold hover:underline">
-                    Create your own
-                  </Link>{" "}
-                  if the team has a free seat.
-                </p>
+                <>
+                  <Button asChild type="button" variant="outline" size="lg" className="w-full">
+                    <Link href="/signup">Create your account</Link>
+                  </Button>
+                  <p className="text-muted-foreground text-center text-xs">
+                    New here? Sign up if the team has a free seat.
+                  </p>
+                </>
               )}
             </form>
           </CardContent>
