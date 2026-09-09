@@ -24,8 +24,13 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<Theme>("light");
 
   const apply = useCallback((next: Theme) => {
-    document.documentElement.classList.toggle("dark", next === "dark");
-    document.documentElement.style.colorScheme = next;
+    const root = document.documentElement;
+    root.classList.toggle("dark", next === "dark");
+    root.style.colorScheme = next;
+    // Keeps <html>'s own background in step with <body>'s — set once by the
+    // pre-paint script, it would otherwise go stale after the first toggle
+    // and peek through at the edges (safe areas, scroll overscroll).
+    root.style.backgroundColor = next === "dark" ? "#000000" : "#f7f7fb";
   }, []);
 
   useEffect(() => {
@@ -43,6 +48,17 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
 
   const setTheme = useCallback(
     (next: Theme) => {
+      // Briefly makes background/border/text colour changes transition
+      // smoothly across the whole page instead of every element snapping
+      // at once — scoped to this window only, so it never taxes ordinary
+      // hover states or animations the rest of the time.
+      const root = document.documentElement;
+      const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+      if (!reduceMotion) {
+        root.classList.add("theme-switching");
+        window.setTimeout(() => root.classList.remove("theme-switching"), 260);
+      }
+
       setThemeState(next);
       try {
         localStorage.setItem(STORAGE_KEY, next);

@@ -151,6 +151,25 @@
   }
 }
 
+/* While the theme toggle is switching (see theme.tsx), every element eases
+ * its colours together instead of the whole page snapping at once while
+ * only body quietly fades — that mismatch was the "laggy" look. Scoped to
+ * this class and removed again right after, so it costs nothing the rest
+ * of the time.
+ */
+.theme-switching,
+.theme-switching *,
+.theme-switching *::before,
+.theme-switching *::after {
+  transition:
+    background-color 200ms ease,
+    border-color 200ms ease,
+    color 200ms ease,
+    fill 200ms ease,
+    stroke 200ms ease !important;
+  transition-delay: 0s !important;
+}
+
 /* Gradient card surface: a diagonal sheen from a lighter top corner down to
    the base card colour. Kept subtle so text stays crisp in both themes. */
 .gradient-card {
