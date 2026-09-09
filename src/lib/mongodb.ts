@@ -84,5 +84,6 @@ export async function collections() {
     users: db.collection("users"),
     settings: db.collection("settings"),
     expenses: db.collection("expenses"),
+    stages: db.collection("stages"),
   };
 }

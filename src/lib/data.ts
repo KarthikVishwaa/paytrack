@@ -5,9 +5,11 @@ import {
   DEFAULT_SETTINGS,
   DEFAULT_TEAM_SIZE,
   DEFAULT_USD_RATE,
+  defaultStages,
   type ExpenseDoc,
   type SessionUser,
   type SettingsDoc,
+  type StageDoc,
   type UserDoc,
 } from "./types";
 
@@ -41,6 +43,7 @@ async function loadSettings(): Promise<SettingsDoc> {
       ...existing,
       teamSize: existing.teamSize ?? DEFAULT_TEAM_SIZE,
       usdRate: existing.usdRate || DEFAULT_USD_RATE,
+      roadmapPercent: existing.roadmapPercent ?? null,
     };
   }
 
@@ -51,6 +54,24 @@ async function loadSettings(): Promise<SettingsDoc> {
   };
   await settings.insertOne(fresh as never);
   return fresh;
+}
+
+/**
+ * The development roadmap. Seeded with the plan the first time it is read, so
+ * the stages exist without anyone having to set them up.
+ */
+export async function getStages(): Promise<StageDoc[]> {
+  return cached("stages", loadStages);
+}
+
+async function loadStages(): Promise<StageDoc[]> {
+  const { stages } = await collections();
+  const rows = (await stages.find({}).sort({ index: 1 }).toArray()) as unknown as StageDoc[];
+  if (rows.length) return rows;
+
+  const seed = defaultStages();
+  await stages.insertMany(seed as never[]);
+  return seed;
 }
 
 export interface Summary {

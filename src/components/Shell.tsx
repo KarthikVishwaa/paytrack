@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 import {
   LayoutDashboard,
   Moon,
+  Rocket,
   Settings2,
   SlidersHorizontal,
   Sun,
@@ -22,6 +23,7 @@ import { ROLE_LABELS, type SessionUser } from "@/lib/types";
 const LINKS = [
   { href: "/dashboard", label: "Home", icon: LayoutDashboard },
   { href: "/expenses", label: "Spending", icon: Wallet },
+  { href: "/progress", label: "Progress", icon: Rocket },
 ];
 
 const SETTINGS_LINK = { href: "/settings", label: "Settings", icon: SlidersHorizontal };
@@ -30,6 +32,7 @@ const SETTINGS_LINK = { href: "/settings", label: "Settings", icon: SlidersHoriz
 const TAB_COLORS: Record<string, string> = {
   "/dashboard": "#6366f1",
   "/expenses": "#10b981",
+  "/progress": "#06b6d4",
   "/admin": "#f59e0b",
   "/settings": "#ec4899",
 };

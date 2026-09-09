@@ -2,7 +2,7 @@
 
 import useSWR, { mutate as globalMutate, type SWRConfiguration } from "swr";
 import type { Summary } from "./data";
-import type { ExpenseDoc, SettingsDoc, UserDoc } from "./types";
+import type { ExpenseDoc, SettingsDoc, StageDoc, UserDoc } from "./types";
 import type { BackupSummary } from "./backup";
 
 export class ApiError extends Error {}
@@ -90,6 +90,10 @@ export function useUsers() {
   return useSWR<{ users: Omit<UserDoc, "passwordHash">[] }>("/api/users", fetcher);
 }
 
+export function useStages() {
+  return useSWR<{ stages: StageDoc[] }>("/api/stages", fetcher);
+}
+
 export function useBackups() {
   return useSWR<{ backups: BackupSummary[] }>("/api/backups", fetcher);
 }
@@ -101,6 +105,7 @@ export function refreshAll() {
     globalMutate("/api/expenses"),
     globalMutate("/api/settings"),
     globalMutate("/api/users"),
+    globalMutate("/api/stages"),
     globalMutate("/api/backups"),
   ]);
 }

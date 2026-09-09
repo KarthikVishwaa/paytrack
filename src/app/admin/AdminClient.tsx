@@ -26,9 +26,19 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/money-ui";
-import { api, refreshAll, useBackups, useSettings, useUsers } from "@/lib/client";
+import { api, refreshAll, useBackups, useSettings, useStages, useUsers } from "@/lib/client";
 import { formatMoney } from "@/lib/money";
-import { ROLES, ROLE_LABELS, type Role, type SettingsDoc, type UserDoc } from "@/lib/types";
+import {
+  ROLES,
+  ROLE_LABELS,
+  STAGE_STATUSES,
+  STAGE_STATUS_LABELS,
+  type Role,
+  type SettingsDoc,
+  type StageDoc,
+  type StageStatus,
+  type UserDoc,
+} from "@/lib/types";
 
 type SafeUser = Omit<UserDoc, "passwordHash">;
 
@@ -38,10 +48,12 @@ export default function AdminClient({ meId }: { meId: string }) {
   const settingsQuery = useSettings();
   const usersQuery = useUsers();
   const backupsQuery = useBackups();
+  const stagesQuery = useStages();
 
   const settings = settingsQuery.data?.settings;
   const users = usersQuery.data?.users;
   const backups = backupsQuery.data?.backups;
+  const stages = stagesQuery.data?.stages;
 
   const [budgetForm, setBudgetForm] = useState({
     projectName: "",
@@ -50,6 +62,7 @@ export default function AdminClient({ meId }: { meId: string }) {
     monthlyInfraBudget: "",
     teamSize: "",
     usdRate: "",
+    roadmapPercent: "",
   });
   const [newUser, setNewUser] = useState({
     name: "",
@@ -58,6 +71,7 @@ export default function AdminClient({ meId }: { meId: string }) {
     password: "",
   });
   const [busy, setBusy] = useState("");
+  const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
 
   // Fill the form once the saved settings arrive.
   useEffect(() => {
@@ -69,6 +83,7 @@ export default function AdminClient({ meId }: { meId: string }) {
       monthlyInfraBudget: String(settings.monthlyInfraBudget),
       teamSize: String(settings.teamSize),
       usdRate: String(settings.usdRate),
+      roadmapPercent: settings.roadmapPercent === null ? "" : String(settings.roadmapPercent),
     });
   }, [settings]);
 
@@ -133,6 +148,35 @@ export default function AdminClient({ meId }: { meId: string }) {
     const password = prompt("New password for " + u.name + " (at least 8 characters):");
     if (!password) return;
     patchUser(u._id, { password }, "Password updated for " + u.name);
+  }
+
+  async function setStageStatus(stage: StageDoc, status: StageStatus) {
+    try {
+      await api("/api/stages/" + stage._id, {
+        method: "PATCH",
+        body: JSON.stringify({
+          status,
+          note: status === "blocked" ? (noteDrafts[stage._id] ?? stage.note) : "",
+        }),
+      });
+      toast.success(stage.name + " marked " + STAGE_STATUS_LABELS[status].toLowerCase());
+      stagesQuery.mutate();
+    } catch (err) {
+      toast.error((err as Error).message);
+    }
+  }
+
+  async function saveStageNote(stage: StageDoc) {
+    try {
+      await api("/api/stages/" + stage._id, {
+        method: "PATCH",
+        body: JSON.stringify({ note: noteDrafts[stage._id] ?? stage.note }),
+      });
+      toast.success("Note saved");
+      stagesQuery.mutate();
+    } catch (err) {
+      toast.error((err as Error).message);
+    }
   }
 
   async function backupNow() {
@@ -299,11 +343,91 @@ export default function AdminClient({ meId }: { meId: string }) {
                     Members sign themselves up at /signup until the seats run out.
                   </p>
                 </div>
+
+                <div className="space-y-1.5">
+                  <Label htmlFor="roadmapPercent">Overall completion override</Label>
+                  <Input
+                    id="roadmapPercent"
+                    inputMode="numeric"
+                    placeholder="Auto"
+                    value={budgetForm.roadmapPercent}
+                    onChange={(e) =>
+                      setBudgetForm({ ...budgetForm, roadmapPercent: e.target.value })
+                    }
+                  />
+                  <p className="text-muted-foreground text-xs">
+                    Shown on the Progress page. Leave blank to calculate it from stage status
+                    below.
+                  </p>
+                </div>
               </div>
               <Button type="submit" disabled={busy === "budget"}>
                 {busy === "budget" ? "Saving…" : "Save budget"}
               </Button>
             </form>
+          )}
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
+          <CardTitle className="text-base">Project status</CardTitle>
+          <CardDescription>
+            What everyone sees on the Progress page. Set where each stage stands — this is not the
+            team&apos;s task list, just the status an investor would want to see.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          {stagesQuery.error ? (
+            <ErrorState
+              message={(stagesQuery.error as Error).message}
+              onRetry={() => stagesQuery.mutate()}
+            />
+          ) : !stages ? (
+            <ListSkeleton rows={4} />
+          ) : (
+            <ul className="divide-y">
+              {stages.map((stage) => (
+                <li key={stage._id} className="space-y-2 py-3 first:pt-0">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium">{stage.name}</p>
+                      <p className="text-muted-foreground truncate text-xs">{stage.summary}</p>
+                    </div>
+                    <Select
+                      value={stage.status}
+                      onValueChange={(v) => setStageStatus(stage, v as StageStatus)}
+                    >
+                      <SelectTrigger size="sm" className="w-[9.5rem]">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {STAGE_STATUSES.map((s) => (
+                          <SelectItem key={s} value={s}>
+                            {STAGE_STATUS_LABELS[s]}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {stage.status === "blocked" ? (
+                    <div className="flex items-center gap-2">
+                      <Input
+                        placeholder="Why it's blocked"
+                        value={noteDrafts[stage._id] ?? stage.note}
+                        onChange={(e) =>
+                          setNoteDrafts({ ...noteDrafts, [stage._id]: e.target.value })
+                        }
+                      />
+                      <Button variant="outline" size="sm" onClick={() => saveStageNote(stage)}>
+                        Save
+                      </Button>
+                    </div>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
           )}
         </CardContent>
       </Card>

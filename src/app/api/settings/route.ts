@@ -1,9 +1,28 @@
 import { NextResponse } from "next/server";
 import { collections } from "@/lib/mongodb";
 import { getSettings } from "@/lib/data";
-import { afterWrite, handle, HttpError, parseAmount, parseText, requireAdmin, requireUser } from "@/lib/api";
+import {
+  afterWrite,
+  handle,
+  HttpError,
+  parseAmount,
+  parseText,
+  requireAdmin,
+  requireUser,
+} from "@/lib/api";
 
 export const dynamic = "force-dynamic";
+
+/** Blank or missing means "leave as is" on read, "clear the override" on save. */
+function parseRoadmapPercent(input: unknown, current: number | null): number | null {
+  if (input === undefined) return current;
+  if (input === null || String(input).trim() === "") return null;
+  const n = typeof input === "number" ? input : Number(String(input).trim());
+  if (!Number.isFinite(n) || n < 0 || n > 100) {
+    throw new HttpError(400, "Overall completion must be between 0 and 100.");
+  }
+  return Math.round(n);
+}
 
 export const GET = handle(async () => {
   await requireUser();
@@ -33,6 +52,7 @@ export const PUT = handle(async (req: Request) => {
     monthlyInfraBudget: parseAmount(body.monthlyInfraBudget ?? current.monthlyInfraBudget),
     teamSize,
     usdRate,
+    roadmapPercent: parseRoadmapPercent(body.roadmapPercent, current.roadmapPercent),
     updatedAt: new Date().toISOString(),
     updatedBy: admin.name,
   };
