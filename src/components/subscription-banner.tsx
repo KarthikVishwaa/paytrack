@@ -12,10 +12,14 @@ import { daysUntil } from "@/lib/types";
 export const WINDOW_DAYS = 30;
 
 /**
- * A dismissible strip for the soonest subscription renewal, so the team can
- * have the payment ready before it's due. Dismissing it only hides today's
- * reminder — it comes back tomorrow, a little more urgent, until the admin
- * pushes the date out or the renewal is handled.
+ * A floating pill for the soonest subscription renewal — like a turn-by-turn
+ * nav card, it sits on top of the page and never pushes content around, and
+ * stays in place while the page scrolls underneath. The little "live" dot is
+ * a plain CSS animation (Tailwind's animate-ping), not a JS interval, so it
+ * costs nothing on battery no matter how long it sits on screen.
+ *
+ * Dismissing it only hides today's reminder — it comes back tomorrow, a
+ * little more urgent, until the admin pushes the date out or it's handled.
  */
 export default function SubscriptionBanner() {
   const { data } = useSubscriptions();
@@ -51,6 +55,7 @@ export default function SubscriptionBanner() {
   }
 
   const urgent = upcoming.days <= 3;
+  const dot = urgent ? "bg-destructive" : "bg-warning";
   const label =
     upcoming.days < 0
       ? `${upcoming.title} is ${Math.abs(upcoming.days)} day${Math.abs(upcoming.days) === 1 ? "" : "s"} overdue`
@@ -60,23 +65,30 @@ export default function SubscriptionBanner() {
 
   return (
     <div
-      className={cn(
-        "animate-rise flex items-center gap-2 border-b px-4 py-2 text-sm font-medium",
-        urgent ? "bg-destructive/10 text-destructive" : "bg-warning/10 text-warning"
-      )}
+      className="pointer-events-auto animate-rise bg-foreground text-background flex max-w-[min(22rem,calc(100vw-2rem))] items-center gap-3 rounded-3xl py-2.5 pr-3 pl-2.5 shadow-xl shadow-black/20"
       role="status"
     >
-      <AlertTriangle className="size-4 shrink-0" />
-      <span className="min-w-0 flex-1 truncate">
+      <span className="bg-background/15 relative grid size-8 shrink-0 place-items-center rounded-full">
+        <AlertTriangle className="size-4" />
+        <span className="absolute -top-0.5 -right-0.5 flex size-2.5">
+          <span
+            className={cn("absolute inline-flex h-full w-full animate-ping rounded-full opacity-75", dot)}
+          />
+          <span className={cn("relative inline-flex size-2.5 rounded-full", dot)} />
+        </span>
+      </span>
+
+      <span className="min-w-0 text-[13px] leading-snug font-medium">
         {label}
         {upcoming.amount ? ` — ${formatMoney(upcoming.amount)}` : ""}
       </span>
+
       <button
         onClick={dismiss}
         aria-label="Dismiss"
-        className="shrink-0 rounded-md p-1 opacity-70 transition-opacity hover:opacity-100"
+        className="hover:bg-background/10 shrink-0 self-start rounded-full p-1.5 opacity-70 transition-opacity hover:opacity-100"
       >
-        <X className="size-4" />
+        <X className="size-3.5" />
       </button>
     </div>
   );
