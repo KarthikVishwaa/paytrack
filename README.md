@@ -115,8 +115,9 @@ not yours, or you don't know where it came from, change its database-user passwo
 | Add / disable / remove members    | ✅    | ❌                     |
 | Reset someone's password          | ✅    | ❌                     |
 | Take and restore backups          | ✅    | ❌                     |
-| Set each build stage's status     | ✅    | ❌ (view only)         |
-| Add / remove subscription reminders | ✅  | ❌ (view only)         |
+| Set each build stage's status and percent | ✅ | ❌ (view only)   |
+| Add / remove subscription renewals | ✅   | ❌ (view only)         |
+| Post / remove reminders           | ✅    | ❌ (view + dismiss)    |
 | Open the Admin page at all        | ✅    | ❌ (redirected away)   |
 
 The app will not let you delete or demote the last admin, so nobody can lock themselves out.
@@ -172,6 +173,8 @@ src/app/login, /signup    sign in, and members creating their own account
 src/app/api/…             JSON API — every route checks the session and the role
 src/components/ui         shadcn/ui components (button, card, dialog, select, table…)
 src/components/subscription-banner.tsx   the dismissible renewal reminder
+src/components/reminder-banner.tsx       the dismissible admin notice
+src/components/stage-celebration.tsx     the "stage complete" pop-up
 src/lib/data.ts           all the budget maths
 src/lib/cache.ts          Redis-or-memory cache
 src/lib/backup.ts         snapshots and restore
@@ -181,18 +184,28 @@ scripts/reset.mjs         empty the database
 scripts/seed.mjs          optional throwaway demo data
 ```
 
-## 10. Build status and subscription reminders
+## 10. Build status, reminders and renewals
 
 The **Status** tab shows the twelve build stages of the app (Architecture and setup through
-Games), each marked Not started / In progress / In review / Complete / Blocked by the admin
-from the Admin page. Everyone else only ever views it — tapping a stage expands what it
-actually covers. The overall percentage is worked out from the stages automatically, or the
-admin can pin it to a specific figure instead.
+Games), each with a status (Not started / In progress / In review / Complete / Blocked) and a
+0-100% figure — both set by hand from **Admin → Project status**. Changing the status alone
+fills in that status's usual percentage (0 / 50 / 80 / 100 / 35); the percent field can then be
+fine-tuned on its own any time. Everyone else only ever views the page — tapping a stage
+expands what it actually covers. The overall percentage is the average of every stage, unless
+the admin pins it to a specific figure in **Admin → Budget → Overall completion override**.
 
-The admin can also track upcoming renewals — a domain, hosting, the Play Console — from
-**Admin → Upcoming subscriptions**: a title, a due date, and an optional amount. Starting 30
-days out, a dismissible reminder appears at the top of every page for whoever's soonest;
-closing it only hides that day's reminder, so it comes back tomorrow if it's still due.
+The moment a stage is marked Complete, everyone gets a celebration — a pop-up with confetti
+naming the stage — the next time their browser notices. It's tracked per browser and shown
+once per stage, and a stage that was already done before someone's first-ever visit is treated
+as the starting line, not news, so it never fires retroactively.
+
+The admin can post free-form **reminders** from **Admin → Reminders** — a message, an optional
+amount, an optional target date ("need ₹50,000 for the next stage by the 10th") — which shows
+as a dismissible banner at the top of every page until someone closes it or the admin deletes
+it. Separately, **Admin → Upcoming subscriptions** tracks recurring renewals (a domain,
+hosting, the Play Console): a title, a due date, and an optional amount. Starting 30 days out,
+a reminder for the soonest one appears at the top of every page; closing it only hides that
+day's reminder, so it comes back tomorrow if it's still due.
 
 The UI is [shadcn/ui](https://ui.shadcn.com) on Tailwind v4, built mobile-first: a bottom tab
 bar and a thumb-reachable add button on phones, a top bar and tables on wider screens, and it

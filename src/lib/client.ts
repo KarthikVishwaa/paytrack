@@ -2,7 +2,14 @@
 
 import useSWR, { mutate as globalMutate, type SWRConfiguration } from "swr";
 import type { Summary } from "./data";
-import type { ExpenseDoc, SettingsDoc, StageDoc, SubscriptionDoc, UserDoc } from "./types";
+import type {
+  ExpenseDoc,
+  ReminderDoc,
+  SettingsDoc,
+  StageDoc,
+  SubscriptionDoc,
+  UserDoc,
+} from "./types";
 import type { BackupSummary } from "./backup";
 
 export class ApiError extends Error {}
@@ -98,6 +105,10 @@ export function useSubscriptions() {
   return useSWR<{ subscriptions: SubscriptionDoc[] }>("/api/subscriptions", fetcher);
 }
 
+export function useReminders() {
+  return useSWR<{ reminders: ReminderDoc[] }>("/api/reminders", fetcher);
+}
+
 export function useBackups() {
   return useSWR<{ backups: BackupSummary[] }>("/api/backups", fetcher);
 }
@@ -111,6 +122,7 @@ export function refreshAll() {
     globalMutate("/api/users"),
     globalMutate("/api/stages"),
     globalMutate("/api/subscriptions"),
+    globalMutate("/api/reminders"),
     globalMutate("/api/backups"),
   ]);
 }

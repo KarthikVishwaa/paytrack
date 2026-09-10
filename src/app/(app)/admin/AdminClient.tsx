@@ -6,6 +6,7 @@ import {
   DatabaseBackup,
   Download,
   KeyRound,
+  Megaphone,
   RotateCcw,
   Trash2,
   UserPlus,
@@ -32,6 +33,7 @@ import {
   api,
   refreshAll,
   useBackups,
+  useReminders,
   useSettings,
   useStages,
   useSubscriptions,
@@ -44,6 +46,7 @@ import {
   ROLE_LABELS,
   STAGE_STATUSES,
   STAGE_STATUS_LABELS,
+  type ReminderDoc,
   type Role,
   type SettingsDoc,
   type StageDoc,
@@ -62,12 +65,14 @@ export default function AdminClient({ meId }: { meId: string }) {
   const backupsQuery = useBackups();
   const stagesQuery = useStages();
   const subscriptionsQuery = useSubscriptions();
+  const remindersQuery = useReminders();
 
   const settings = settingsQuery.data?.settings;
   const users = usersQuery.data?.users;
   const backups = backupsQuery.data?.backups;
   const stages = stagesQuery.data?.stages;
   const subscriptions = subscriptionsQuery.data?.subscriptions;
+  const reminders = remindersQuery.data?.reminders;
 
   const [budgetForm, setBudgetForm] = useState({
     projectName: "",
@@ -85,8 +90,10 @@ export default function AdminClient({ meId }: { meId: string }) {
     password: "",
   });
   const [newSubscription, setNewSubscription] = useState({ title: "", dueDate: "", amount: "" });
+  const [newReminder, setNewReminder] = useState({ message: "", amount: "", dueDate: "" });
   const [busy, setBusy] = useState("");
   const [noteDrafts, setNoteDrafts] = useState<Record<string, string>>({});
+  const [percentDrafts, setPercentDrafts] = useState<Record<string, string>>({});
 
   // Fill the form once the saved settings arrive.
   useEffect(() => {
@@ -194,6 +201,20 @@ export default function AdminClient({ meId }: { meId: string }) {
     }
   }
 
+  async function saveStagePercent(stage: StageDoc) {
+    const draft = percentDrafts[stage._id];
+    if (draft === undefined) return;
+    const n = Math.max(0, Math.min(100, Math.round(Number(draft))));
+    if (!Number.isFinite(n) || n === stage.percent) return;
+    try {
+      await api("/api/stages/" + stage._id, { method: "PATCH", body: JSON.stringify({ percent: n }) });
+      stagesQuery.mutate();
+    } catch (err) {
+      toast.error((err as Error).message);
+      stagesQuery.mutate();
+    }
+  }
+
   async function addSubscription(e: React.FormEvent) {
     e.preventDefault();
     setBusy("subscription");
@@ -215,6 +236,32 @@ export default function AdminClient({ meId }: { meId: string }) {
       await api("/api/subscriptions/" + s._id, { method: "DELETE" });
       toast.success(s.title + " removed");
       subscriptionsQuery.mutate();
+    } catch (err) {
+      toast.error((err as Error).message);
+    }
+  }
+
+  async function addReminder(e: React.FormEvent) {
+    e.preventDefault();
+    setBusy("reminder");
+    try {
+      await api("/api/reminders", { method: "POST", body: JSON.stringify(newReminder) });
+      toast.success("Reminder posted — everyone will see it");
+      setNewReminder({ message: "", amount: "", dueDate: "" });
+      remindersQuery.mutate();
+    } catch (err) {
+      toast.error((err as Error).message);
+    } finally {
+      setBusy("");
+    }
+  }
+
+  async function removeReminder(r: ReminderDoc) {
+    if (!confirm("Remove this reminder? It disappears for everyone.")) return;
+    try {
+      await api("/api/reminders/" + r._id, { method: "DELETE" });
+      toast.success("Reminder removed");
+      remindersQuery.mutate();
     } catch (err) {
       toast.error((err as Error).message);
     }
@@ -518,10 +565,103 @@ export default function AdminClient({ meId }: { meId: string }) {
 
       <Card>
         <CardHeader>
+          <CardTitle className="flex items-center gap-2 text-base">
+            <Megaphone className="size-4" /> Reminders
+          </CardTitle>
+          <CardDescription>
+            A notice for everyone — "need ₹50,000 for the next stage by the 10th." Shows at the
+            top of every page until someone closes it or you remove it here.
+          </CardDescription>
+        </CardHeader>
+        <CardContent className="space-y-4">
+          {remindersQuery.error ? (
+            <ErrorState
+              message={(remindersQuery.error as Error).message}
+              onRetry={() => remindersQuery.mutate()}
+            />
+          ) : !reminders ? (
+            <ListSkeleton rows={2} />
+          ) : reminders.length === 0 ? (
+            <EmptyState
+              title="Nothing posted"
+              hint="Add a note below and it shows up for everyone right away."
+              icon={Megaphone}
+            />
+          ) : (
+            <ul className="divide-y">
+              {reminders.map((r) => (
+                <li key={r._id} className="flex items-center gap-2 py-3 first:pt-0">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium">{r.message}</p>
+                    <p className="text-muted-foreground text-xs">
+                      {r.amount ? formatMoney(r.amount, settings?.currency) : ""}
+                      {r.amount && r.dueDate ? " · " : ""}
+                      {r.dueDate ? "by " + r.dueDate : ""}
+                    </p>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    className="text-destructive size-9"
+                    onClick={() => removeReminder(r)}
+                    aria-label="Remove"
+                  >
+                    <Trash2 className="size-4" />
+                  </Button>
+                </li>
+              ))}
+            </ul>
+          )}
+
+          <Separator />
+
+          <form onSubmit={addReminder} className="space-y-3">
+            <div className="space-y-1.5">
+              <Label htmlFor="reminderMessage">Message</Label>
+              <Input
+                id="reminderMessage"
+                value={newReminder.message}
+                onChange={(e) => setNewReminder({ ...newReminder, message: e.target.value })}
+                placeholder="Need ₹50,000 for the next stage"
+                required
+              />
+            </div>
+            <div className="grid gap-3 sm:grid-cols-2">
+              <div className="space-y-1.5">
+                <Label htmlFor="reminderAmount">Amount (optional)</Label>
+                <Input
+                  id="reminderAmount"
+                  inputMode="decimal"
+                  value={newReminder.amount}
+                  onChange={(e) => setNewReminder({ ...newReminder, amount: e.target.value })}
+                  placeholder="0"
+                />
+              </div>
+              <div className="space-y-1.5">
+                <Label htmlFor="reminderDueDate">Target date (optional)</Label>
+                <Input
+                  id="reminderDueDate"
+                  type="date"
+                  value={newReminder.dueDate}
+                  onChange={(e) => setNewReminder({ ...newReminder, dueDate: e.target.value })}
+                />
+              </div>
+            </div>
+            <Button type="submit" variant="outline" disabled={busy === "reminder"}>
+              {busy === "reminder" ? "Posting…" : "Post reminder"}
+            </Button>
+          </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardHeader>
           <CardTitle className="text-base">Project status</CardTitle>
           <CardDescription>
-            What everyone sees on the Progress page. Set where each stage stands — this is not the
-            team&apos;s task list, just the status an investor would want to see.
+            What everyone sees on the Progress page. Set the percent complete and the status for
+            each stage — this is not the team&apos;s task list, just what an investor would want
+            to see. Changing status alone fills in its usual percent; fine-tune it separately any
+            time. Completing a stage shows everyone a celebration the next time they open the app.
           </CardDescription>
         </CardHeader>
         <CardContent>
@@ -541,6 +681,21 @@ export default function AdminClient({ meId }: { meId: string }) {
                       <p className="text-sm font-medium">{stage.name}</p>
                       <p className="text-muted-foreground truncate text-xs">{stage.summary}</p>
                     </div>
+
+                    <div className="flex items-center gap-1">
+                      <Input
+                        inputMode="numeric"
+                        value={percentDrafts[stage._id] ?? String(stage.percent)}
+                        onChange={(e) =>
+                          setPercentDrafts({ ...percentDrafts, [stage._id]: e.target.value })
+                        }
+                        onBlur={() => saveStagePercent(stage)}
+                        className="w-14 text-center"
+                        aria-label={stage.name + " percent complete"}
+                      />
+                      <span className="text-muted-foreground text-sm">%</span>
+                    </div>
+
                     <Select
                       value={stage.status}
                       onValueChange={(v) => setStageStatus(stage, v as StageStatus)}

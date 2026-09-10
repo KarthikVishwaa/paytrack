@@ -252,6 +252,31 @@
   }
 }
 
+/* A stage-completion confetti piece: bursts outward from the centre to a
+   per-piece offset (--dx/--dy/--rot, set inline) and fades as it goes. */
+@keyframes confetti-burst {
+  0% {
+    transform: translate(-50%, -50%) rotate(0deg) scale(0.6);
+    opacity: 1;
+  }
+  65% {
+    opacity: 1;
+  }
+  100% {
+    transform: translate(calc(-50% + var(--dx)), calc(-50% + var(--dy) + 38vh)) rotate(var(--rot))
+      scale(1);
+    opacity: 0;
+  }
+}
+.confetti-piece {
+  position: absolute;
+  border-radius: 2px;
+  opacity: 0;
+  animation-name: confetti-burst;
+  animation-timing-function: cubic-bezier(0.15, 0.7, 0.4, 1);
+  animation-fill-mode: forwards;
+}
+
 /* Whole-screen swap between routes so navigation feels like an app, not a
    page load. Content slides up a touch and fades in. */
 @keyframes page-swap {

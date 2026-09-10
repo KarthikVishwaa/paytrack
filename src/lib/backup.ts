@@ -11,7 +11,14 @@
  */
 import { collections } from "./mongodb";
 import { cacheBust } from "./cache";
-import type { ExpenseDoc, SettingsDoc, StageDoc, SubscriptionDoc, UserDoc } from "./types";
+import type {
+  ExpenseDoc,
+  ReminderDoc,
+  SettingsDoc,
+  StageDoc,
+  SubscriptionDoc,
+  UserDoc,
+} from "./types";
 
 const KEEP = 20;
 const AUTO_EVERY_MS = 60 * 60 * 1000; // one hour
@@ -33,6 +40,7 @@ export interface BackupDoc extends BackupSummary {
     expenses: ExpenseDoc[];
     stages: StageDoc[];
     subscriptions: SubscriptionDoc[];
+    reminders: ReminderDoc[];
   };
 }
 
@@ -40,15 +48,19 @@ export async function createBackup(
   createdBy: string,
   reason: BackupReason = "manual"
 ): Promise<BackupSummary> {
-  const { users, settings, expenses, stages, subscriptions } = await collections();
+  const { users, settings, expenses, stages, subscriptions, reminders } = await collections();
 
-  const [userRows, settingsRow, expenseRows, stageRows, subscriptionRows] = await Promise.all([
-    users.find({}).toArray() as unknown as Promise<UserDoc[]>,
-    settings.findOne({ _id: "app" as never }) as unknown as Promise<SettingsDoc | null>,
-    expenses.find({}).toArray() as unknown as Promise<ExpenseDoc[]>,
-    stages.find({}).sort({ index: 1 }).toArray() as unknown as Promise<StageDoc[]>,
-    subscriptions.find({}).sort({ dueDate: 1 }).toArray() as unknown as Promise<SubscriptionDoc[]>,
-  ]);
+  const [userRows, settingsRow, expenseRows, stageRows, subscriptionRows, reminderRows] =
+    await Promise.all([
+      users.find({}).toArray() as unknown as Promise<UserDoc[]>,
+      settings.findOne({ _id: "app" as never }) as unknown as Promise<SettingsDoc | null>,
+      expenses.find({}).toArray() as unknown as Promise<ExpenseDoc[]>,
+      stages.find({}).sort({ index: 1 }).toArray() as unknown as Promise<StageDoc[]>,
+      subscriptions.find({}).sort({ dueDate: 1 }).toArray() as unknown as Promise<
+        SubscriptionDoc[]
+      >,
+      reminders.find({}).sort({ createdAt: -1 }).toArray() as unknown as Promise<ReminderDoc[]>,
+    ]);
 
   const doc: BackupDoc = {
     _id: crypto.randomUUID(),
@@ -65,6 +77,7 @@ export async function createBackup(
       expenses: expenseRows,
       stages: stageRows,
       subscriptions: subscriptionRows,
+      reminders: reminderRows,
     },
   };
 
@@ -111,13 +124,14 @@ export async function restoreBackup(
 
   await createBackup(restoredBy, "before-restore");
 
-  const { users, settings, expenses, stages, subscriptions } = await collections();
+  const { users, settings, expenses, stages, subscriptions, reminders } = await collections();
   await Promise.all([
     users.deleteMany({}),
     settings.deleteMany({}),
     expenses.deleteMany({}),
     stages.deleteMany({}),
     subscriptions.deleteMany({}),
+    reminders.deleteMany({}),
   ]);
 
   if (snapshot.data.users.length) await users.insertMany(snapshot.data.users as never[]);
@@ -127,6 +141,9 @@ export async function restoreBackup(
   if (snapshot.data.stages?.length) await stages.insertMany(snapshot.data.stages as never[]);
   if (snapshot.data.subscriptions?.length) {
     await subscriptions.insertMany(snapshot.data.subscriptions as never[]);
+  }
+  if (snapshot.data.reminders?.length) {
+    await reminders.insertMany(snapshot.data.reminders as never[]);
   }
 
   await cacheBust();

@@ -18,7 +18,9 @@ import RoutingTabBar, { type TabLink } from "@/components/routing-tab-bar";
 import NavProgress from "@/components/nav-progress";
 import StartupLoading from "@/components/startup-loading";
 import SubscriptionBanner from "@/components/subscription-banner";
+import ReminderBanner from "@/components/reminder-banner";
 import OnboardingTour from "@/components/onboarding-tour";
+import StageCelebration from "@/components/stage-celebration";
 import { cn } from "@/lib/utils";
 import { ROLE_LABELS, type SessionUser } from "@/lib/types";
 
@@ -68,6 +70,7 @@ export default function Shell({
       <NavProgress />
       <StartupLoading />
       <OnboardingTour links={links} />
+      <StageCelebration />
 
       <header className="bg-background/80 safe-top sticky top-0 z-30 border-b backdrop-blur-xl">
         <div className="mx-auto flex h-14 w-full max-w-5xl items-center gap-3 px-4">
@@ -129,6 +132,7 @@ export default function Shell({
         </div>
       </header>
 
+      <ReminderBanner />
       <SubscriptionBanner />
 
       {/* pb leaves room for the mobile tab bar so nothing hides behind it.

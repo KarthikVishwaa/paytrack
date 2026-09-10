@@ -6,7 +6,9 @@ import {
   DEFAULT_TEAM_SIZE,
   DEFAULT_USD_RATE,
   defaultStages,
+  STAGE_STATUS_DEFAULT_PERCENT,
   type ExpenseDoc,
+  type ReminderDoc,
   type SessionUser,
   type SettingsDoc,
   type StageDoc,
@@ -68,7 +70,14 @@ export async function getStages(): Promise<StageDoc[]> {
 async function loadStages(): Promise<StageDoc[]> {
   const { stages } = await collections();
   const rows = (await stages.find({}).sort({ index: 1 }).toArray()) as unknown as StageDoc[];
-  if (rows.length) return rows;
+  if (rows.length) {
+    // percent was added after some stages may already have been seeded —
+    // fall back to that status's usual figure until the admin sets one.
+    return rows.map((row) => ({
+      ...row,
+      percent: row.percent ?? STAGE_STATUS_DEFAULT_PERCENT[row.status],
+    }));
+  }
 
   const seed = defaultStages();
   await stages.insertMany(seed as never[]);
@@ -86,6 +95,19 @@ async function loadSubscriptions(): Promise<SubscriptionDoc[]> {
     .find({})
     .sort({ dueDate: 1 })
     .toArray()) as unknown as SubscriptionDoc[];
+}
+
+/** Reminders the admin has posted, newest first. */
+export async function getReminders(): Promise<ReminderDoc[]> {
+  return cached("reminders", loadReminders);
+}
+
+async function loadReminders(): Promise<ReminderDoc[]> {
+  const { reminders } = await collections();
+  return (await reminders
+    .find({})
+    .sort({ createdAt: -1 })
+    .toArray()) as unknown as ReminderDoc[];
 }
 
 export interface Summary {

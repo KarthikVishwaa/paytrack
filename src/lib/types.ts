@@ -135,9 +135,12 @@ export const STAGE_STATUS_LABELS: Record<StageStatus, string> = {
   blocked: "Blocked",
 };
 
-/** One representative fill level per status — a status is an honest, coarse
- *  signal, not a task count, so each maps to a single bar height. */
-export const STAGE_STATUS_PERCENT: Record<StageStatus, number> = {
+/**
+ * The suggested fill level for a status — applied automatically when the
+ * admin switches a stage to that status, and then freely fine-tuned by hand
+ * from there. The number that actually counts is StageDoc.percent.
+ */
+export const STAGE_STATUS_DEFAULT_PERCENT: Record<StageStatus, number> = {
   not_started: 0,
   in_progress: 50,
   in_review: 80,
@@ -152,6 +155,8 @@ export interface StageDoc {
   /** One line of scope, shown under the name — what the stage covers, not a checklist. */
   summary: string;
   status: StageStatus;
+  /** How far along it is, 0-100. Set by hand in the admin page. */
+  percent: number;
   /** Why it's stuck. Only shown (and only meaningful) while status is "blocked". */
   note: string;
   updatedAt: string;
@@ -359,15 +364,16 @@ export function defaultStages(): StageDoc[] {
     name: stage.name,
     summary: stage.summary,
     status: "not_started" as StageStatus,
+    percent: 0,
     note: "",
     updatedAt: now,
     updatedBy: "system",
   }));
 }
 
-/** How full a stage's bar looks. */
+/** How full a stage's bar looks — the admin-set figure, clamped just in case. */
 export function stagePercent(stage: StageDoc): number {
-  return STAGE_STATUS_PERCENT[stage.status];
+  return Math.max(0, Math.min(100, Math.round(stage.percent ?? 0)));
 }
 
 /**
@@ -404,4 +410,21 @@ export function daysUntil(dueDate: string): number {
   today.setHours(0, 0, 0, 0);
   const due = new Date(dueDate + "T00:00:00");
   return Math.round((due.getTime() - today.getTime()) / 86400000);
+}
+
+// ---- Reminders -----------------------------------------------------------
+// Free-form notices the admin posts for everyone to see — "need ₹50,000 for
+// the next stage by the 10th" — shown as a dismissible banner until closed
+// or removed. Unlike subscriptions, these aren't recurring: once it's dealt
+// with, the admin deletes it, and it's gone for good.
+
+export interface ReminderDoc {
+  _id: string;
+  message: string;
+  /** What's needed, if anything. 0 means the admin didn't set one. */
+  amount: number;
+  /** A target date, if any. Empty string means none was set. */
+  dueDate: string;
+  createdAt: string;
+  createdBy: string;
 }

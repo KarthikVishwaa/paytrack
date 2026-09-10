@@ -18,6 +18,7 @@ export const CACHE_KEYS = [
   "users",
   "stages",
   "subscriptions",
+  "reminders",
 ] as const;
 export type CacheKey = (typeof CACHE_KEYS)[number];
 
