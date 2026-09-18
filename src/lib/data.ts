@@ -20,13 +20,28 @@ import {
  * The signed-in user, re-checked against the database on every request, so a member who was
  * removed, disabled or given a different role stops being one straight away instead of when
  * their cookie happens to expire.
+ *
+ * If that database check itself fails — a connection blip, Atlas waking up
+ * from idle, a cold start racing the driver — this trusts the signed cookie
+ * for that one request instead of bouncing everyone to the login screen. A
+ * forged or expired cookie still fails verifySession() and is never reached
+ * here; a real removal/disable still takes effect on the very next request
+ * that can actually reach the database. This only covers the gap where the
+ * database, not the session, is the thing that's briefly unavailable.
  */
 export async function activeUser(): Promise<SessionUser | null> {
   const session = await currentUser();
   if (!session) return null;
 
-  const { users } = await collections();
-  const row = (await users.findOne({ _id: session.id as never })) as UserDoc | null;
+  let row: UserDoc | null;
+  try {
+    const { users } = await collections();
+    row = (await users.findOne({ _id: session.id as never })) as UserDoc | null;
+  } catch (error) {
+    console.warn("activeUser: database check failed, trusting the signed session:", error);
+    return session;
+  }
+
   if (!row || !row.active) return null;
 
   return { id: row._id, name: row.name, email: row.email, role: row.role };

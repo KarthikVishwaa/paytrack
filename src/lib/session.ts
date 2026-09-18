@@ -1,68 +1,31 @@
 import { cookies } from "next/headers";
-import { SignJWT, jwtVerify } from "jose";
 
-import type { Role, SessionUser } from "./types";
+import type { SessionUser } from "./types";
+import { COOKIE_NAME, MAX_AGE, getSecret, signToken, verifyToken } from "./jwt";
 
-export const COOKIE_NAME = "paytrack_session";
+export { COOKIE_NAME };
 
-const MAX_AGE = 60 * 60 * 24 * 7; // 7 days
-
-function getSecret(): Uint8Array {
-  const value = process.env.AUTH_SECRET;
-
-  if (!value || value.length < 16) {
-    throw new Error(
-      "AUTH_SECRET is missing or too short. It must be at least 16 characters."
-    );
+function requireSecret(): Uint8Array {
+  const secret = getSecret();
+  if (!secret) {
+    throw new Error("AUTH_SECRET is missing or too short. It must be at least 16 characters.");
   }
-
-  return new TextEncoder().encode(value);
+  return secret;
 }
 
-export async function signSession(
-  user: SessionUser
-): Promise<string> {
-  return new SignJWT({
-    name: user.name,
-    email: user.email,
-    role: user.role,
-  })
-    .setProtectedHeader({
-      alg: "HS256",
-    })
-    .setSubject(user.id)
-    .setIssuedAt()
-    .setExpirationTime(`${MAX_AGE}s`)
-    .sign(getSecret());
+export async function signSession(user: SessionUser): Promise<string> {
+  return signToken(user, requireSecret());
 }
 
-export async function verifySession(
-  token: string
-): Promise<SessionUser | null> {
-  try {
-    const { payload } = await jwtVerify(
-      token,
-      getSecret()
-    );
+export async function verifySession(token: string): Promise<SessionUser | null> {
+  const secret = getSecret();
+  if (!secret) return null;
 
-    if (!payload.sub) {
-      return null;
-    }
-
-    return {
-      id: payload.sub,
-      name: String(payload.name ?? ""),
-      email: String(payload.email ?? ""),
-      role: payload.role as Role,
-    };
-  } catch {
-    return null;
-  }
+  const result = await verifyToken(token, secret);
+  return result?.user ?? null;
 }
 
-export async function setSessionCookie(
-  user: SessionUser
-): Promise<void> {
+export async function setSessionCookie(user: SessionUser): Promise<void> {
   const token = await signSession(user);
 
   const store = await cookies();
