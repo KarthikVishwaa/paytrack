@@ -17,6 +17,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { BudgetBar, CardsSkeleton, EmptyState, ErrorState, StatCard } from "@/components/money-ui";
+import PaymentRemindersCard from "@/components/payment-reminders-card";
 import { useSummary } from "@/lib/client";
 import { formatDate, formatMoney } from "@/lib/money";
 import { CATEGORY_COLORS, CATEGORY_LABELS, type ExpenseCategory } from "@/lib/types";
@@ -145,6 +146,8 @@ export default function DashboardClient({ isAdmin }: { isAdmin: boolean }) {
           <BudgetBar used={totals.spent} total={totals.budget} currency={currency} />
         </CardContent>
       </Card>
+
+      <PaymentRemindersCard />
 
       <div className="stagger grid grid-cols-2 gap-3 lg:grid-cols-4">
         <StatCard
