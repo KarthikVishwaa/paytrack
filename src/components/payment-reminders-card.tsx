@@ -18,8 +18,8 @@ type Row = {
   kind: "subscription" | "reminder";
 };
 
-/** How far ahead a renewal counts as "upcoming" here — same window as the floating pill. */
-const WINDOW_DAYS = 30;
+/** How far ahead a renewal counts as "upcoming" here. */
+export const WINDOW_DAYS = 30;
 
 function urgency(days: number | null): "overdue" | "urgent" | "soon" | "later" {
   if (days === null) return "later";

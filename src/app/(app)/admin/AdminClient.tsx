@@ -28,7 +28,7 @@ import {
 } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { EmptyState, ErrorState, ListSkeleton } from "@/components/money-ui";
-import { WINDOW_DAYS } from "@/components/subscription-banner";
+import { WINDOW_DAYS } from "@/components/payment-reminders-card";
 import {
   api,
   refreshAll,
@@ -463,8 +463,8 @@ export default function AdminClient({ meId }: { meId: string }) {
             <CalendarClock className="size-4" /> Upcoming subscriptions
           </CardTitle>
           <CardDescription>
-            Renewals coming up — a reminder shows on every page starting {WINDOW_DAYS} days out,
-            so there is time to have the payment ready.
+            Renewals coming up — they show on the dashboard&apos;s payment reminders card starting{" "}
+            {WINDOW_DAYS} days out, so there is time to have the payment ready.
           </CardDescription>
         </CardHeader>
         <CardContent className="space-y-4">

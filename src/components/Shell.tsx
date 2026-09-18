@@ -17,8 +17,6 @@ import { useTheme } from "@/components/theme";
 import RoutingTabBar, { type TabLink } from "@/components/routing-tab-bar";
 import NavProgress from "@/components/nav-progress";
 import StartupLoading from "@/components/startup-loading";
-import SubscriptionBanner from "@/components/subscription-banner";
-import ReminderBanner from "@/components/reminder-banner";
 import OnboardingTour from "@/components/onboarding-tour";
 import StageCelebration from "@/components/stage-celebration";
 import { cn } from "@/lib/utils";
@@ -131,18 +129,6 @@ export default function Shell({
           </div>
         </div>
       </header>
-
-      {/* Floating, not in-flow: these overlay the page instead of pushing it
-          down, and stay put while the page scrolls underneath. pointer-events
-          is re-enabled only on the pills themselves, so the empty space
-          around them still lets taps through to whatever's underneath. */}
-      <div
-        className="pointer-events-none fixed inset-x-0 z-40 flex flex-col items-center gap-2 px-4"
-        style={{ top: "calc(3.5rem + env(safe-area-inset-top) + 0.625rem)" }}
-      >
-        <ReminderBanner />
-        <SubscriptionBanner />
-      </div>
 
       {/* pb leaves room for the mobile tab bar so nothing hides behind it.
           key on the pathname replays the swap animation on every route change. */}
