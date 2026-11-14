@@ -112,7 +112,7 @@ export const DEFAULT_SETTINGS: Omit<SettingsDoc, "updatedAt" | "updatedBy"> = {
   _id: "app",
   projectName: "Mobile App Project",
   currency: "INR",
-  totalBudget: 522000,
+  totalBudget: 610000,
   monthlyInfraBudget: 0,
   teamSize: DEFAULT_TEAM_SIZE,
   usdRate: DEFAULT_USD_RATE,

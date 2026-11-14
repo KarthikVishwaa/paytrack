@@ -1,4 +1,4 @@
-/** Indian-format currency, e.g. 522000 -> "₹5,22,000". */
+/** Indian-format currency, e.g. 610000 -> "₹6,10,000". */
 export function formatMoney(amount: number, currency = "INR"): string {
   try {
     return new Intl.NumberFormat("en-IN", {

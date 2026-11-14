@@ -50,7 +50,7 @@ await db.collection("settings").updateOne(
     $set: {
       projectName: "Mobile App Project",
       currency: "INR",
-      totalBudget: 522000,
+      totalBudget: 610000,
       monthlyInfraBudget: 12000,
       updatedAt: now,
       updatedBy: "Karthik R",

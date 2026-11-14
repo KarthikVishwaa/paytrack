@@ -57,7 +57,7 @@ import {
 
 type SafeUser = Omit<UserDoc, "passwordHash">;
 
-const DEFAULT_BUDGET = 522000;
+const DEFAULT_BUDGET = 610000;
 
 export default function AdminClient({ meId }: { meId: string }) {
   const settingsQuery = useSettings();
